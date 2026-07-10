@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Debug files
+data/debug_*.html
+data/jd_debug*.html
+data/taobao_debug*.html
+data/jd_search_debug*.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WorkBuddy internal
+.workbuddy/

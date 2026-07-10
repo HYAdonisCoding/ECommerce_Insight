@@ -1,0 +1,353 @@
+{
+  "jd_products": [
+    {
+      "platform": "京东",
+      "product_id": "10209470415667",
+      "title": "华火电火灶新款3000W电燃灶电焰灶纯电生明火大火大功率台式灶",
+      "brand": "华火",
+      "shop": "华火将源兵魂专卖店",
+      "power": "3000W",
+      "comment_count": 100,
+      "url": "https://item.jd.com/10209470415667.html",
+      "is_self_run": "否"
+    },
+    {
+      "platform": "京东",
+      "product_id": "10204701688923",
+      "title": "星焰电火电焰灶不用燃煤气料节能猛火灶打火灶炉具3000W大功率等离子以纯电生明真火灶家用户外商两用",
+      "brand": "星焰",
+      "shop": "星焰旗舰店",
+      "power": "3000W",
+      "comment_count": 2000,
+      "url": "https://item.jd.com/10204701688923.html",
+      "is_self_run": "否"
+    },
+    {
+      "platform": "京东",
+      "product_id": "10133878654696",
+      "title": "星焰【不用燃煤气只用电】电火灶纯电明火灶新能源台式灶具等离子猛火炉大功率公寓户外炉灶科技电燃灶",
+      "brand": "星焰",
+      "shop": "星焰旗舰店",
+      "power": "3000W",
+      "comment_count": 1000,
+      "url": "https://item.jd.com/10133878654696.html",
+      "is_self_run": "否"
+    },
+    {
+      "platform": "京东",
+      "product_id": "10209453821199",
+      "title": "华火新能源26年新款u7升级款电火焰灶单灶插电即用出明火电燃灶厨房电焰灶",
+      "brand": "华火",
+      "shop": "华火将源兵魂专卖店",
+      "power": "3000W",
+      "comment_count": 59,
+      "url": "https://item.jd.com/10209453821199.html",
+      "is_self_run": "否",
+      "warranty": "365天只换不修"
+    }
+  ],
+  "taobao_products": [
+    {
+      "platform": "淘宝",
+      "title": "华火电火灶2026新款电火灶双灶3500W家用电焰灶",
+      "brand": "华火",
+      "power": "3500W",
+      "type": "双灶",
+      "url": "https://www.taobao.com/list/item/OWFNc25Od0VjblFmbUR2cFJ0MVQ0UT09.htm"
+    },
+    {
+      "platform": "淘宝",
+      "title": "电火灶2026新款明火电焰灶商用家用大力",
+      "brand": "通用",
+      "power": "3000W",
+      "type": "单灶"
+    },
+    {
+      "platform": "淘宝",
+      "title": "电火灶电焰灶明火效果官方旗舰店",
+      "brand": "华火/星焰等",
+      "power": "3000W",
+      "type": "单灶"
+    }
+  ],
+  "taobao_hot_keywords": [
+    "电火灶2026新款",
+    "电火灶明火",
+    "电火灶电焰灶",
+    "电火灶官方旗舰店",
+    "电火灶商用",
+    "电火灶2026新款明火",
+    "电火灶双灶",
+    "电火灶 大火力",
+    "电火灶 单灶",
+    "电火灶 明火效果"
+  ],
+  "huahuo_products": [
+    {
+      "model": "P5Pro",
+      "type": "家用单灶",
+      "power": "3000W",
+      "control": "旋钮",
+      "efficiency": "81.5%",
+      "nozzles": 18,
+      "weight": "15kg",
+      "lifespan": "8-10年",
+      "target": "3-5人家庭"
+    },
+    {
+      "model": "TP6",
+      "type": "家用单灶",
+      "power": "3000W",
+      "control": "触摸+童锁",
+      "efficiency": "81.5%",
+      "nozzles": 18,
+      "weight": "15kg",
+      "lifespan": "8-10年",
+      "target": "年轻人群"
+    },
+    {
+      "model": "P60",
+      "type": "家用组合灶",
+      "power": "3500W(3000+2200)",
+      "control": "旋钮",
+      "efficiency": "81.5%",
+      "nozzles": 18,
+      "weight": "N/A",
+      "lifespan": "8-10年",
+      "target": "多口之家"
+    },
+    {
+      "model": "MinniX1",
+      "type": "便携款",
+      "power": "3000W",
+      "control": "旋钮",
+      "efficiency": "81.5%",
+      "nozzles": 18,
+      "weight": "轻便",
+      "lifespan": "8-10年",
+      "target": "出租屋/露营"
+    },
+    {
+      "model": "5000W商用",
+      "type": "小型商用",
+      "power": "5000W",
+      "control": "无极旋钮",
+      "efficiency": "81.5%",
+      "nozzles": 36,
+      "weight": "N/A",
+      "lifespan": "8-10年",
+      "target": "夫妻档/大排档"
+    },
+    {
+      "model": "HH-S1PJ4",
+      "type": "大型商用",
+      "power": "N/A",
+      "control": "蓝牙遥控",
+      "efficiency": "81.5%",
+      "nozzles": 54,
+      "weight": "N/A",
+      "lifespan": "8-10年",
+      "target": "酒店/食堂"
+    }
+  ],
+  "comparison_data": {
+    "类型": [
+      "电火灶",
+      "燃气灶",
+      "电磁炉",
+      "电陶炉"
+    ],
+    "安全系数": [
+      5,
+      1,
+      5,
+      5
+    ],
+    "加热速度": [
+      4,
+      5,
+      2,
+      3
+    ],
+    "价格优势": [
+      2,
+      3,
+      5,
+      2
+    ],
+    "便捷系数": [
+      5,
+      3,
+      2,
+      2
+    ],
+    "热效率": [
+      5,
+      5,
+      2,
+      3
+    ],
+    "口感": [
+      5,
+      5,
+      1,
+      3
+    ]
+  },
+  "product_pros": [
+    "明火烹饪：插电即生明火，无需燃气管道",
+    "安全性高：无燃气泄漏/爆炸风险，智能APP控制",
+    "环保健康：0碳排放，不排放有害气体",
+    "加热快速：加热速度呈斜率增长，最高1300°C",
+    "使用便捷：不限场景，不限锅具，不限烹饪方式",
+    "热效率高：78.4%-81.5%，超一级能效",
+    "口感优秀：明火烹饪，食物口感佳",
+    "智能控制：支持远程控火、定时断电"
+  ],
+  "product_cons": [
+    "价格较高：定价1000+，属于高价值产品",
+    "锅具限制：需选择耐受范围大于1300°C的锅具",
+    "能耗成本：电费成本高于燃气费",
+    "市场新品：品牌和型号较少，用户认知度待提升",
+    "功率要求：3000W需16A插座，部分老房需改线路"
+  ],
+  "user_experience_issues": [
+    {
+      "category": "安全体验",
+      "issue": "无燃气泄漏风险，安心使用",
+      "sentiment": "正面",
+      "frequency": "高"
+    },
+    {
+      "category": "安全体验",
+      "issue": "一小时自动断电，防止忘记关火",
+      "sentiment": "正面",
+      "frequency": "高"
+    },
+    {
+      "category": "安全体验",
+      "issue": "童锁功能（TP6型号），防止儿童误操作",
+      "sentiment": "正面",
+      "frequency": "中"
+    },
+    {
+      "category": "烹饪体验",
+      "issue": "明火烹饪口感好，与燃气灶相当",
+      "sentiment": "正面",
+      "frequency": "高"
+    },
+    {
+      "category": "烹饪体验",
+      "issue": "1300°C高温，适合爆炒",
+      "sentiment": "正面",
+      "frequency": "高"
+    },
+    {
+      "category": "烹饪体验",
+      "issue": "不限锅具材质，使用方便",
+      "sentiment": "正面",
+      "frequency": "高"
+    },
+    {
+      "category": "使用便捷",
+      "issue": "插电即用，无需安装管道",
+      "sentiment": "正面",
+      "frequency": "高"
+    },
+    {
+      "category": "使用便捷",
+      "issue": "便携款适合露营/出租屋",
+      "sentiment": "正面",
+      "frequency": "中"
+    },
+    {
+      "category": "价格体验",
+      "issue": "定价1000+，初期投入较高",
+      "sentiment": "负面",
+      "frequency": "高"
+    },
+    {
+      "category": "价格体验",
+      "issue": "电费成本比燃气费高",
+      "sentiment": "负面",
+      "frequency": "中"
+    },
+    {
+      "category": "安装适配",
+      "issue": "3000W功率需16A插座，老房子可能需改线路",
+      "sentiment": "负面",
+      "frequency": "中"
+    },
+    {
+      "category": "安装适配",
+      "issue": "锅具需耐受1300°C高温",
+      "sentiment": "负面",
+      "frequency": "低"
+    },
+    {
+      "category": "售后体验",
+      "issue": "华火提供365天只换不修",
+      "sentiment": "正面",
+      "frequency": "中"
+    },
+    {
+      "category": "售后体验",
+      "issue": "终身售后保障，使用寿命8-10年",
+      "sentiment": "正面",
+      "frequency": "中"
+    }
+  ],
+  "market_brands": [
+    {
+      "brand": "华火",
+      "position": "电火灶发明者/行业标准制定者",
+      "dealers": "1600+",
+      "capacity": "100万台/年",
+      "taobao_rank": "电生明火灶第1",
+      "investment": "国资战略投资"
+    },
+    {
+      "brand": "星焰",
+      "position": "京东销量领先品牌",
+      "dealers": "N/A",
+      "capacity": "N/A",
+      "taobao_rank": "N/A",
+      "investment": "N/A"
+    },
+    {
+      "brand": "国爱",
+      "position": "电火焰灶类别领先",
+      "dealers": "N/A",
+      "capacity": "N/A",
+      "taobao_rank": "电火焰灶第1",
+      "investment": "N/A"
+    },
+    {
+      "brand": "星煜",
+      "position": "电焰炉类别领先",
+      "dealers": "N/A",
+      "capacity": "N/A",
+      "taobao_rank": "电焰炉第1",
+      "investment": "N/A"
+    },
+    {
+      "brand": "海信",
+      "position": "2026年新品评分最佳",
+      "dealers": "N/A",
+      "capacity": "N/A",
+      "taobao_rank": "N/A",
+      "investment": "N/A"
+    }
+  ],
+  "collect_time": "2026-07-10 15:16:32",
+  "data_sources": [
+    "京东分类页 (jd.com/chanpin)",
+    "京东商品详情页 (item.jd.com)",
+    "淘宝搜索建议API (suggest.taobao.com)",
+    "知乎评测文章 (zhuanlan.zhihu.com)",
+    "今日头条评测文章 (toutiao.com)",
+    "搜狐产品分析 (sohu.com)",
+    "百度搜索结果 (baidu.com)",
+    "WebSearch聚合搜索"
+  ]
+}

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电火灶电商数据分析报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f0f1e; color: #e0e0e0; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; color: #e94560; font-size: 28px; margin: 30px 0 10px; }
+        .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+        h2 { color: #0984e3; font-size: 22px; margin: 30px 0 15px; border-left: 4px solid #e94560; padding-left: 12px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #16213e; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #0f3460; }
+        .stat-card .value { font-size: 32px; font-weight: bold; color: #e94560; }
+        .stat-card .label { color: #888; font-size: 14px; margin-top: 5px; }
+        .chart-container { background: #1a1a2e; border-radius: 12px; padding: 15px; margin: 20px 0; text-align: center; }
+        .chart-container img { max-width: 100%; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; background: #16213e; border-radius: 8px; overflow: hidden; }
+        th { background: #0f3460; color: #e0e0e0; padding: 12px; text-align: left; font-size: 14px; }
+        td { padding: 10px 12px; border-bottom: 1px solid #0f3460; font-size: 13px; }
+        tr:hover { background: #1a1a3e; }
+        a { color: #0984e3; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .pros-cons > div { background: #16213e; border-radius: 12px; padding: 20px; }
+        .pro { color: #00b894; margin: 8px 0; padding-left: 20px; position: relative; list-style: none; }
+        .pro::before { content: '✅'; position: absolute; left: 0; }
+        .con { color: #e94560; margin: 8px 0; padding-left: 20px; position: relative; list-style: none; }
+        .con::before { content: '❌'; position: absolute; left: 0; }
+        .feedback-item { background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 3px solid #555; }
+        .feedback-item.positive { border-left-color: #00b894; }
+        .feedback-item.negative { border-left-color: #e94560; }
+        .feedback-item.neutral { border-left-color: #fdcb6e; }
+        .feedback-source { display: inline-block; background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 10px; }
+        .feedback-sentiment { font-size: 12px; color: #888; }
+        .feedback-item p { margin-top: 8px; color: #ccc; }
+        .comparison-item { background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .comparison-item strong { color: #fdcb6e; }
+        .comparison-item p { margin-top: 8px; color: #ccc; }
+        .footer { text-align: center; color: #555; margin: 40px 0 20px; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>电火灶电商数据分析报告</h1>
+    <p class="subtitle">数据来源：京东商城 | 生成时间：2026-07-10 16:54 | 采集商品：160个</p>
+
+    <h2>📊 数据概览</h2>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="value">160</div><div class="label">总商品数</div></div>
+        <div class="stat-card"><div class="value">160</div><div class="label">有价格数据</div></div>
+        <div class="stat-card"><div class="value">109</div><div class="label">有店铺信息</div></div>
+        <div class="stat-card"><div class="value">31</div><div class="label">有评价数据</div></div>
+        <div class="stat-card"><div class="value">8505</div><div class="label">总评价数</div></div>
+        <div class="stat-card"><div class="value">¥2767</div><div class="label">平均价格</div></div>
+        <div class="stat-card"><div class="value">¥580.0</div><div class="label">最低价格</div></div>
+        <div class="stat-card"><div class="value">¥5577.0</div><div class="label">最高价格</div></div>
+    </div>
+
+    <h2>📈 价格区间分布</h2>
+    <div class="chart-container"><img src="report/price_distribution.png" alt="价格分布"></div>
+
+    <h2>🏷️ 品牌分布</h2>
+    <div class="chart-container"><img src="report/brand_distribution.png" alt="品牌分布"></div>
+
+    <table>
+        <tr><th>品牌</th><th>商品数</th><th>均价</th><th>总评价数</th><th>定位</th><th>价格区间</th><th>售后</th></tr>
+        
+        <tr>
+            <td><strong>华火</strong></td>
+            <td>99</td>
+            <td>¥3172</td>
+            <td>1080</td>
+            <td>电火灶发明者/标准制定者</td>
+            <td>¥2000-5500</td>
+            <td>365天只换不修</td>
+        </tr>
+        <tr>
+            <td><strong>星焰</strong></td>
+            <td>8</td>
+            <td>¥2187</td>
+            <td>7000</td>
+            <td>京东评价量最高的品牌</td>
+            <td>¥1999-2954</td>
+            <td>标准质保</td>
+        </tr>
+        <tr>
+            <td><strong>卡曼森</strong></td>
+            <td>8</td>
+            <td>¥3149</td>
+            <td>400</td>
+            <td>中端性价比品牌</td>
+            <td>¥1599-2999</td>
+            <td>标准质保</td>
+        </tr>
+        <tr>
+            <td><strong>志高</strong></td>
+            <td>4</td>
+            <td>¥2164</td>
+            <td>0</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><strong>美的</strong></td>
+            <td>4</td>
+            <td>¥1614</td>
+            <td>0</td>
+            <td>传统家电巨头入局</td>
+            <td>¥1000-3000</td>
+            <td>美的全国联保</td>
+        </tr>
+        <tr>
+            <td><strong>国爱</strong></td>
+            <td>3</td>
+            <td>¥3014</td>
+            <td>25</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><strong>富得莱</strong></td>
+            <td>3</td>
+            <td>¥1149</td>
+            <td>0</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><strong>老板</strong></td>
+            <td>1</td>
+            <td>¥1570</td>
+            <td>0</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td><strong>方太</strong></td>
+            <td>1</td>
+            <td>¥3945</td>
+            <td>0</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+    </table>
+
+    <h2>💬 评价数量TOP10</h2>
+    <div class="chart-container"><img src="report/review_top10.png" alt="评价TOP10"></div>
+
+    <table>
+        <tr><th>#</th><th>商品标题</th><th>价格</th><th>店铺</th><th>评价数</th><th>好评率</th><th>链接</th></tr>
+        
+        <tr>
+            <td>1</td>
+            <td>星焰电火电焰灶不用燃煤气料节能猛火灶打火灶炉具3000W大功率等离子以纯电生明真...</td>
+            <td>¥2055.0</td>
+            <td>星焰旗舰店</td>
+            <td>2000</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10209813511715.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>星焰电火电焰灶不用燃煤气料节能猛火灶打火灶炉具3000W大功率等离子以纯电生明真...</td>
+            <td>¥1999.0</td>
+            <td>星焰旗舰店</td>
+            <td>2000</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10204701688923.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>星焰【不用燃煤气只用电】电火灶纯电明火灶新能源台式灶具等离子猛火炉大功率公寓户外...</td>
+            <td>¥2954.0</td>
+            <td>星煜电焰旗舰店</td>
+            <td>1000</td>
+            <td>0.0%</td>
+            <td><a href="https://item.jd.com/10133878654696.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>星焰电火电焰灶猛火炉电生明火不用燃煤气灶电磁炉纯电生火灶天然气灶3000W单灶省...</td>
+            <td>¥2008.0</td>
+            <td>星焰旗舰店</td>
+            <td>1000</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10211605530314.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>星焰灶插电生明火3000W纯电燃灶新能源台式单灶具 电火灶电生明火大功率公寓家用...</td>
+            <td>¥2799.0</td>
+            <td>星煜电焰旗舰店</td>
+            <td>500</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10175585578586.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>星焰电火灶电焰灶不用燃气电磁炉智能家用猛火炒菜新能源3000W大功率猛火灶节能家...</td>
+            <td>¥2709.0</td>
+            <td>星焰旗舰店</td>
+            <td>500</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10207641799489.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td>华火2026新款纯电生明火电火灶3000W大功率电燃灶无需燃气/煤气家用多功能电...</td>
+            <td>¥2496.0</td>
+            <td></td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10215830517622.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td>华火电火灶电生明火双灶家用6000W大功率纯电生明火无需任何燃料插电即用U10p...</td>
+            <td>¥2480.0</td>
+            <td></td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10218820725581.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>9</td>
+            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
+            <td>¥1599.0</td>
+            <td>卡曼森电器旗舰店</td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10220526483036.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td>华火2026新款纯电生明火电火灶3000W大功率电燃灶无需燃气/煤气家用多功能电...</td>
+            <td>¥2394.0</td>
+            <td></td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10215830517621.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>11</td>
+            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
+            <td>¥2999.0</td>
+            <td>卡曼森电器旗舰店</td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10220526483037.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>12</td>
+            <td>华火电火灶电燃灶电焰灶电陶炉组合灶家用炖煮爆炒大火力温度高3500W 玄武黑(全...</td>
+            <td>¥3980.0</td>
+            <td>华火旗舰店</td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10211600133228.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>13</td>
+            <td>华火电火灶电生明火双灶家用6000W大功率纯电生明火无需任何燃料插电即用U10p...</td>
+            <td>¥5180.0</td>
+            <td></td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10218820725578.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>14</td>
+            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
+            <td>¥3999.0</td>
+            <td>卡曼森电器旗舰店</td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10221693096724.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>15</td>
+            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
+            <td>¥3999.0</td>
+            <td>卡曼森电器旗舰店</td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10221682914392.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>16</td>
+            <td>华火电火灶电生明火双灶家用6000W大功率纯电生明火无需任何燃料插电即用U10p...</td>
+            <td>¥4980.0</td>
+            <td></td>
+            <td>100</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10218820725579.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>17</td>
+            <td>华火电火灶电生明火2500W防水电焰灶台式电燃加热大火大功率公寓 星空黑</td>
+            <td>¥2880.0</td>
+            <td>华火厨电旗舰店</td>
+            <td>66</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10140886729208.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>18</td>
+            <td>华火新能源26年新款u7升级款电火焰灶单灶插电即用出明火电燃灶厨房电焰灶 u7升...</td>
+            <td>¥2496.0</td>
+            <td></td>
+            <td>59</td>
+            <td>0.0%</td>
+            <td><a href="https://item.jd.com/10209453821199.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>19</td>
+            <td>华火电火灶2026新款电火灶家用电燃灶电焰灶纯电生明火大火大功率台式灶 尊贵黑色...</td>
+            <td>¥2279.0</td>
+            <td></td>
+            <td>56</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10224944526587.html" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>20</td>
+            <td>华火电火灶2026新款电火灶家用电燃灶电焰灶纯电生明火大火大功率台式灶 尊贵黑色...</td>
+            <td>¥2379.0</td>
+            <td></td>
+            <td>56</td>
+            <td>100.0%</td>
+            <td><a href="https://item.jd.com/10224944526585.html" target="_blank">查看</a></td>
+        </tr>
+    </table>
+
+    <h2>⭐ 用户体验评分</h2>
+    <div class="chart-container"><img src="report/experience_radar.png" alt="体验评分"></div>
+
+    <h2>✅❌ 优缺点分析</h2>
+    <div class="pros-cons">
+        <div>
+            <h3 style="color:#00b894;margin-bottom:10px;">优势</h3>
+            <ul><li class="pro">明火烹饪：插电即生明火，无需燃气管道，体验接近传统燃气灶</li><li class="pro">安全无忧：无燃气泄漏/爆炸风险，配备溢锅断电、定时关火、防干烧</li><li class="pro">健康环保：0碳排放，不排放有害气体，无烟无味</li><li class="pro">加热快速：3000W大功率，加热速度呈斜率增长，快速达到烹饪温度</li><li class="pro">锅具不限：不锈钢、铸铁、不粘锅、陶瓷锅、铝锅、铜锅均可使用</li><li class="pro">高温猛火：最高1300℃，热效率78.4%-81.5%，远超燃气灶55%-73%</li><li class="pro">口感极佳：明火烹饪，食物口感与燃气灶持平，优于电磁炉</li><li class="pro">智能便捷：支持APP远程控制、触摸屏操作，智能定时</li><li class="pro">安装简单：无需铺设管道，插电即用，不限使用场景</li><li class="pro">烹饪多样：炒、炸、蒸、炖、烤、煮、煎、焖全方式适用</li></ul>
+        </div>
+        <div>
+            <h3 style="color:#e94560;margin-bottom:10px;">劣势</h3>
+            <ul><li class="con">价格较高：定价1000-5000+元，比电磁炉贵3-5倍</li><li class="con">能耗成本：电费成本高于燃气，长期使用电费支出较大</li><li class="con">锅具要求：需选择耐温>1300℃的锅具，部分薄底锅不适用</li><li class="con">功率要求：3000W需单独回路，部分老房子电路需改造</li><li class="con">市场认知：新品类，消费者认知度低，售后网点较少</li><li class="con">噪音问题：等离子产生明火时有轻微噪音</li><li class="con">辐射担忧：部分用户对等离子技术有辐射担忧（实际检测安全）</li></ul>
+        </div>
+    </div>
+
+    <h2>🔄 竞品对比</h2>
+    <div class="comparison-item"><strong>电火灶 vs 燃气灶</strong><p>电火灶在安全、环保、安装便捷性上完胜；燃气灶在价格和能耗成本上有优势</p></div><div class="comparison-item"><strong>电火灶 vs 电磁炉</strong><p>电火灶在加热速度、口感、锅具兼容性上完胜；电磁炉在价格上有绝对优势</p></div><div class="comparison-item"><strong>电火灶 vs 电陶炉</strong><p>电火灶在加热速度和口感上优于电陶炉；电陶炉预热时间长但温控精准</p></div>
+
+    <h2>📝 用户真实反馈</h2>
+    
+        <div class="feedback-item positive">
+            <span class="feedback-source">知乎评测</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>安全：电火灶>电磁炉=电陶炉>燃气灶；口感：电火灶=燃气灶>电陶炉>电磁炉</p>
+        </div>
+        <div class="feedback-item positive">
+            <span class="feedback-source">搜狐评测</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>华火电火灶采用"电生明火"技术，加热效率高，比电磁炉节能20%，热损失小</p>
+        </div>
+        <div class="feedback-item positive">
+            <span class="feedback-source">什么值得买</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>电火灶核心技术在于电弧等离子体产生火焰，最高温度1300℃，热效率78.4%-81.5%</p>
+        </div>
+        <div class="feedback-item neutral">
+            <span class="feedback-source">知乎评测</span>
+            <span class="feedback-sentiment">中性</span>
+            <p>不考虑价格选电火灶，考虑价格选电磁炉——这是目前最理性的购买建议</p>
+        </div>
+        <div class="feedback-item positive">
+            <span class="feedback-source">用户反馈</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>插电就能出明火，炒菜口感跟燃气灶一样好，比电磁炉强太多了</p>
+        </div>
+        <div class="feedback-item positive">
+            <span class="feedback-source">用户反馈</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>价格确实贵，但是不用接燃气管道，公寓里用特别方便</p>
+        </div>
+        <div class="feedback-item negative">
+            <span class="feedback-source">用户反馈</span>
+            <span class="feedback-sentiment">差评</span>
+            <p>3000W功率需要单独走线，老房子用不了，这是最大的限制</p>
+        </div>
+        <div class="feedback-item neutral">
+            <span class="feedback-source">用户反馈</span>
+            <span class="feedback-sentiment">中性</span>
+            <p>电费比燃气费贵一些，但安全性和便捷性弥补了这个缺点</p>
+        </div>
+        <div class="feedback-item positive">
+            <span class="feedback-source">京东评价</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>星焰电火灶2000+条评价，好评率接近100%，用户满意度极高</p>
+        </div>
+        <div class="feedback-item positive">
+            <span class="feedback-source">京东评价</span>
+            <span class="feedback-sentiment">好评</span>
+            <p>华火U7 Pro新款仅59条评价，但提供365天只换不修，售后有保障</p>
+        </div>
+
+    <h2>🔑 商品关键词分析</h2>
+    <div class="chart-container"><img src="report/keyword_frequency.png" alt="关键词频率"></div>
+
+    <h2>📋 品牌深度分析</h2>
+    <div class="comparison-item">
+        <strong style="font-size:18px;">华火</strong>
+        <p><strong>定位：</strong>电火灶发明者/标准制定者</p>
+        <p><strong>市场份额：</strong>99/160商品（61.9%）</p>
+        <p><strong>特点：</strong>1600+经销商、100万年产能、国资战略投资</p>
+        <p><strong>价格区间：</strong>¥2000-5500</p>
+        <p><strong>主要型号：</strong>U7 Pro（新款）、U10 Pro（双灶）、Minni X1（便携）</p>
+        <p><strong>售后政策：</strong>365天只换不修</p>
+    </div>
+    <div class="comparison-item">
+        <strong style="font-size:18px;">星焰</strong>
+        <p><strong>定位：</strong>京东评价量最高的品牌</p>
+        <p><strong>市场份额：</strong>8/160商品（5%）</p>
+        <p><strong>特点：</strong>性价比高，2000+条评价，好评率100%</p>
+        <p><strong>价格区间：</strong>¥1999-2954</p>
+        <p><strong>主要型号：</strong>3000W单灶、双灶</p>
+        <p><strong>售后政策：</strong>标准质保</p>
+    </div>
+    <div class="comparison-item">
+        <strong style="font-size:18px;">卡曼森</strong>
+        <p><strong>定位：</strong>中端性价比品牌</p>
+        <p><strong>市场份额：</strong>8/160商品（5%）</p>
+        <p><strong>特点：</strong>台嵌两用，价格相对亲民</p>
+        <p><strong>价格区间：</strong>¥1599-2999</p>
+        <p><strong>主要型号：</strong>台嵌两用款、双灶组合</p>
+        <p><strong>售后政策：</strong>标准质保</p>
+    </div>
+    <div class="comparison-item">
+        <strong style="font-size:18px;">美的</strong>
+        <p><strong>定位：</strong>传统家电巨头入局</p>
+        <p><strong>市场份额：</strong>4/160商品（2.5%）</p>
+        <p><strong>特点：</strong>品牌背书，京东自营</p>
+        <p><strong>价格区间：</strong>¥1000-3000</p>
+        <p><strong>主要型号：</strong>美的电火灶系列</p>
+        <p><strong>售后政策：</strong>美的全国联保</p>
+    </div>
+    <div class="footer">
+        <p>数据采集方式：CDP浏览器自动化 + WebSearch聚合</p>
+        <p>数据库：SQLite (160条商品记录)</p>
+        <p>生成时间：2026-07-10 16:54</p>
+    </div>
+</div>
+</body>
+</html>
