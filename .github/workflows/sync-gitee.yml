@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Mirror to Gitee
+      - name: Mirror GitHub repository to Gitee
         run: |
           git clone --mirror https://github.com/HYAdonisCoding/ECommerce_Insight.git
           cd ECommerce_Insight.git
-          git push --mirror https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/HYAdonisCoding/ECommerce_Insight.git
+          git push --mirror https://${{ secrets.GITEE_USERNAME }}:${{ secrets.GITEE_TOKEN }}@gitee.com/${{ secrets.GITEE_USERNAME }}/ECommerce_Insight.git
