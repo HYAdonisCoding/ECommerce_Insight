@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-电火灶电商数据分析报告生成器
-- 从SQLite数据库读取商品和评价数据
-- 从WebSearch获取的用户体验数据
-- 生成可视化图表 + HTML报告 + CSV导出
+电火灶电商数据分析报告生成器 v2
+- 京东 + 淘宝双平台数据
+- 商品、评价、用户体验全维度分析
+- 可视化图表 + HTML报告 + CSV/JSON导出
 """
 import sqlite3
 import json
@@ -14,7 +14,6 @@ from datetime import datetime
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 
 # 中文字体
 plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'Heiti TC', 'PingFang SC', 'SimHei']
@@ -40,6 +39,8 @@ COLORS = {
     'yellow': '#fdcb6e',
     'purple': '#a29bfe',
     'orange': '#fd79a8',
+    'jd_red': '#e94560',
+    'tb_orange': '#ff6600',
 }
 
 
@@ -52,7 +53,7 @@ def load_data():
     c.execute("SELECT * FROM products ORDER BY comment_count DESC")
     products = [dict(r) for r in c.fetchall()]
 
-    c.execute("SELECT * FROM reviews LIMIT 100")
+    c.execute("SELECT * FROM reviews ORDER BY review_date DESC")
     reviews = [dict(r) for r in c.fetchall()]
 
     c.execute("SELECT * FROM search_log ORDER BY id")
@@ -65,12 +66,39 @@ def load_data():
 def analyze_products(products):
     """分析商品数据"""
     analysis = {}
+    analysis['_products'] = products
+
+    # 平台分布
+    platforms = {}
+    for p in products:
+        pf = p.get('platform', 'unknown')
+        if pf not in platforms:
+            platforms[pf] = {'count': 0, 'prices': [], 'comments': 0, 'brands': set()}
+        platforms[pf]['count'] += 1
+        if p['price'] > 0:
+            platforms[pf]['prices'].append(p['price'])
+        platforms[pf]['comments'] += p.get('comment_count', 0) or 0
+        if p.get('brand'):
+            platforms[pf]['brands'].add(p['brand'])
+
+    for pf in platforms:
+        prices = platforms[pf]['prices']
+        platforms[pf]['avg_price'] = sum(prices) / len(prices) if prices else 0
+        platforms[pf]['min_price'] = min(prices) if prices else 0
+        platforms[pf]['max_price'] = max(prices) if prices else 0
+        platforms[pf]['brand_count'] = len(platforms[pf]['brands'])
+        platforms[pf]['brands'] = list(platforms[pf]['brands'])[:10]
+
+    analysis['platforms'] = platforms
 
     # 基础统计
     analysis['total'] = len(products)
+    analysis['jd_count'] = platforms.get('jd', {}).get('count', 0)
+    analysis['tb_count'] = platforms.get('taobao', {}).get('count', 0)
     analysis['with_price'] = len([p for p in products if p['price'] > 0])
-    analysis['with_shop'] = len([p for p in products if p['shop_name']])
-    analysis['with_reviews'] = len([p for p in products if p['comment_count'] > 0])
+    analysis['with_shop'] = len([p for p in products if p.get('shop_name')])
+    analysis['with_reviews'] = len([p for p in products if (p.get('comment_count') or 0) > 0])
+    analysis['with_brand'] = len([p for p in products if p.get('brand')])
 
     # 价格统计
     prices = [p['price'] for p in products if p['price'] > 0]
@@ -78,35 +106,39 @@ def analyze_products(products):
         analysis['price_min'] = min(prices)
         analysis['price_max'] = max(prices)
         analysis['price_avg'] = sum(prices) / len(prices)
-        analysis['price_median'] = sorted(prices)[len(prices) // 2]
+        sorted_prices = sorted(prices)
+        analysis['price_median'] = sorted_prices[len(sorted_prices) // 2]
 
     # 价格区间分布
-    ranges = [(0, 1000), (1000, 2000), (2000, 3000), (3000, 4000), (4000, 5000), (5000, 6000)]
+    ranges = [(0, 500), (500, 1000), (1000, 2000), (2000, 3000),
+              (3000, 4000), (4000, 5000), (5000, 8000), (8000, 100000)]
     analysis['price_ranges'] = []
     for lo, hi in ranges:
         count = len([p for p in products if lo <= p['price'] < hi])
-        analysis['price_ranges'].append({'range': f'¥{lo}-{hi}', 'count': count})
+        label = f'¥{lo}-{hi}' if hi < 100000 else f'¥{lo}+'
+        analysis['price_ranges'].append({'range': label, 'count': count, 'lo': lo, 'hi': hi})
 
-    # 品牌分析
+    # 品牌分析 - 从数据库实际数据
     brands = {}
     for p in products:
-        title = p.get('title', '')
-        for brand in ['华火', '星焰', '星煜', '卡曼森', '海信', '国爱', '美的', '苏泊尔', '方太', '老板', '志高', '富得莱']:
-            if brand in title:
-                if brand not in brands:
-                    brands[brand] = {'count': 0, 'prices': [], 'comments': 0, 'shops': set()}
-                brands[brand]['count'] += 1
-                if p['price'] > 0:
-                    brands[brand]['prices'].append(p['price'])
-                brands[brand]['comments'] += p.get('comment_count', 0)
-                if p['shop_name']:
-                    brands[brand]['shops'].add(p['shop_name'])
-                break
+        brand = p.get('brand', '')
+        if not brand:
+            brand = '其他/无品牌'
+        if brand not in brands:
+            brands[brand] = {'count': 0, 'prices': [], 'comments': 0, 'platforms': set()}
+        brands[brand]['count'] += 1
+        if p['price'] > 0:
+            brands[brand]['prices'].append(p['price'])
+        brands[brand]['comments'] += (p.get('comment_count') or 0)
+        if p.get('platform'):
+            brands[brand]['platforms'].add(p['platform'])
 
     for b in brands.values():
         b['avg_price'] = sum(b['prices']) / len(b['prices']) if b['prices'] else 0
-        b['shops'] = list(b['shops'])
-    analysis['brands'] = brands
+        b['platforms'] = list(b['platforms'])
+
+    analysis['brands'] = dict(sorted(brands.items(), key=lambda x: -x[1]['count']))
+    analysis['brand_count'] = len([b for b in brands if b != '其他/无品牌'])
 
     # 店铺分析
     shops = {}
@@ -114,30 +146,93 @@ def analyze_products(products):
         shop = p.get('shop_name', '')
         if shop:
             if shop not in shops:
-                shops[shop] = {'count': 0, 'prices': [], 'comments': 0}
+                shops[shop] = {'count': 0, 'prices': [], 'comments': 0, 'platform': p.get('platform', '')}
             shops[shop]['count'] += 1
             if p['price'] > 0:
                 shops[shop]['prices'].append(p['price'])
-            shops[shop]['comments'] += p.get('comment_count', 0)
+            shops[shop]['comments'] += (p.get('comment_count') or 0)
 
     for s in shops.values():
         s['avg_price'] = sum(s['prices']) / len(s['prices']) if s['prices'] else 0
-    analysis['shops'] = dict(sorted(shops.items(), key=lambda x: -x[1]['count'])[:10])
+    analysis['shops'] = dict(sorted(shops.items(), key=lambda x: -x[1]['count'])[:15])
 
     # 评价统计
-    reviewed = [p for p in products if p['comment_count'] > 0]
-    analysis['total_comments'] = sum(p['comment_count'] for p in reviewed)
-    analysis['avg_good_rate'] = sum(p['good_rate'] for p in reviewed if p['good_rate'] > 0) / len([p for p in reviewed if p['good_rate'] > 0]) if reviewed else 0
+    reviewed = [p for p in products if (p.get('comment_count') or 0) > 0]
+    analysis['total_comments'] = sum((p.get('comment_count') or 0) for p in reviewed)
+    good_rates = [p['good_rate'] for p in reviewed if (p.get('good_rate') or 0) > 0]
+    analysis['avg_good_rate'] = sum(good_rates) / len(good_rates) if good_rates else 0
 
     # 关键词分析
     keywords = {}
     for p in products:
         title = p.get('title', '')
-        for kw in ['3000W', '6000W', '台式', '嵌入', '双灶', '单灶', '商用', '家用', '明火',
-                    '等离子', '新能源', '智能', '猛火', '节能', '大功率', '便携', '户外']:
+        for kw in ['3000W', '6000W', '5000W', '3500W', '台式', '嵌入', '双灶', '单灶',
+                    '商用', '家用', '明火', '等离子', '新能源', '智能', '猛火', '节能',
+                    '大功率', '便携', '户外', '台嵌两用', '凹面', '平凹两用', '不挑锅',
+                    '可调温', '定时', '触控', '2000W', '10000W', '7500W', '4000W']:
             if kw in title:
                 keywords[kw] = keywords.get(kw, 0) + 1
     analysis['keywords'] = dict(sorted(keywords.items(), key=lambda x: -x[1]))
+
+    return analysis
+
+
+def analyze_reviews(reviews):
+    """分析评价数据"""
+    analysis = {
+        'total': len(reviews),
+        'jd_count': len([r for r in reviews if r.get('platform') == 'jd']),
+        'tb_count': len([r for r in reviews if r.get('platform') == 'taobao']),
+    }
+
+    # 情感分析（基于score）
+    positive = [r for r in reviews if (r.get('score') or 0) >= 4]
+    neutral = [r for r in reviews if (r.get('score') or 0) == 3]
+    negative = [r for r in reviews if (r.get('score') or 0) > 0 and (r.get('score') or 0) <= 2]
+
+    analysis['positive_count'] = len(positive)
+    analysis['neutral_count'] = len(neutral)
+    analysis['negative_count'] = len(negative)
+
+    # 关键词提取
+    review_keywords = {}
+    keyword_map = {
+        '火力大': ['火力大', '火很大', '火猛', '火力猛', '大火力', '猛火'],
+        '加热快': ['加热快', '升温快', '速度快', '热得快'],
+        '安全': ['安全', '放心', '不漏气', '无燃气'],
+        '方便': ['方便', '便捷', '简单', '易用', '省心'],
+        '口感好': ['口感好', '味道好', '好吃', '锅气', '跟燃气灶一样'],
+        '外观好': ['好看', '美观', '颜值', '漂亮', '大气'],
+        '性价比': ['性价比', '划算', '实惠', '便宜', '值得'],
+        '噪音': ['噪音', '声音大', '吵', '嗡嗡'],
+        '价格贵': ['贵', '太贵', '价格高', '不值'],
+        '质量好': ['质量好', '做工好', '精致', '结实'],
+        '安装': ['安装', '师傅', '上门'],
+        '售后': ['售后', '客服', '保修', '换新'],
+        '功率高': ['功率大', '大功率', '瓦数'],
+        '锅气': ['锅气', '烟火气', '明火'],
+        '清洁': ['清洁', '清洗', '好打理', '易清洁'],
+    }
+
+    for r in reviews:
+        content = r.get('content', '') or ''
+        for label, patterns in keyword_map.items():
+            for pat in patterns:
+                if pat in content:
+                    review_keywords[label] = review_keywords.get(label, 0) + 1
+                    break
+
+    analysis['keywords'] = dict(sorted(review_keywords.items(), key=lambda x: -x[1]))
+
+    # 按品牌分组评价
+    brand_reviews = {}
+    for r in reviews:
+        brand = r.get('brand', '') or r.get('product_name', '')[:4] or '未知'
+        if brand not in brand_reviews:
+            brand_reviews[brand] = []
+        brand_reviews[brand].append(r)
+
+    analysis['by_brand'] = brand_reviews
 
     return analysis
 
@@ -178,76 +273,47 @@ USER_EXPERIENCE_DATA = {
         '电火灶 vs 电磁炉': '电火灶在加热速度、口感、锅具兼容性上完胜；电磁炉在价格上有绝对优势',
         '电火灶 vs 电陶炉': '电火灶在加热速度和口感上优于电陶炉；电陶炉预热时间长但温控精准',
     },
-    'user_feedback': [
-        {'source': '知乎评测', 'content': '安全：电火灶>电磁炉=电陶炉>燃气灶；口感：电火灶=燃气灶>电陶炉>电磁炉', 'sentiment': 'positive'},
-        {'source': '搜狐评测', 'content': '华火电火灶采用"电生明火"技术，加热效率高，比电磁炉节能20%，热损失小', 'sentiment': 'positive'},
-        {'source': '什么值得买', 'content': '电火灶核心技术在于电弧等离子体产生火焰，最高温度1300℃，热效率78.4%-81.5%', 'sentiment': 'positive'},
-        {'source': '知乎评测', 'content': '不考虑价格选电火灶，考虑价格选电磁炉——这是目前最理性的购买建议', 'sentiment': 'neutral'},
-        {'source': '用户反馈', 'content': '插电就能出明火，炒菜口感跟燃气灶一样好，比电磁炉强太多了', 'sentiment': 'positive'},
-        {'source': '用户反馈', 'content': '价格确实贵，但是不用接燃气管道，公寓里用特别方便', 'sentiment': 'positive'},
-        {'source': '用户反馈', 'content': '3000W功率需要单独走线，老房子用不了，这是最大的限制', 'sentiment': 'negative'},
-        {'source': '用户反馈', 'content': '电费比燃气费贵一些，但安全性和便捷性弥补了这个缺点', 'sentiment': 'neutral'},
-        {'source': '京东评价', 'content': '星焰电火灶2000+条评价，好评率接近100%，用户满意度极高', 'sentiment': 'positive'},
-        {'source': '京东评价', 'content': '华火U7 Pro新款仅59条评价，但提供365天只换不修，售后有保障', 'sentiment': 'positive'},
-    ],
-    'brand_analysis': {
-        '华火': {
-            'position': '电火灶发明者/标准制定者',
-            'market_share': '99/160商品（61.9%）',
-            'features': '1600+经销商、100万年产能、国资战略投资',
-            'price_range': '¥2000-5500',
-            'key_models': 'U7 Pro（新款）、U10 Pro（双灶）、Minni X1（便携）',
-            'warranty': '365天只换不修',
-        },
-        '星焰': {
-            'position': '京东评价量最高的品牌',
-            'market_share': '8/160商品（5%）',
-            'features': '性价比高，2000+条评价，好评率100%',
-            'price_range': '¥1999-2954',
-            'key_models': '3000W单灶、双灶',
-            'warranty': '标准质保',
-        },
-        '卡曼森': {
-            'position': '中端性价比品牌',
-            'market_share': '8/160商品（5%）',
-            'features': '台嵌两用，价格相对亲民',
-            'price_range': '¥1599-2999',
-            'key_models': '台嵌两用款、双灶组合',
-            'warranty': '标准质保',
-        },
-        '美的': {
-            'position': '传统家电巨头入局',
-            'market_share': '4/160商品（2.5%）',
-            'features': '品牌背书，京东自营',
-            'price_range': '¥1000-3000',
-            'key_models': '美的电火灶系列',
-            'warranty': '美的全国联保',
-        },
-    },
 }
 
 
-def generate_charts(analysis):
+def generate_charts(analysis, review_analysis):
     """生成可视化图表"""
     charts = []
 
-    # 图1: 价格区间分布
+    # 图1: 价格区间分布（双平台对比）
     fig, ax = plt.subplots(figsize=(10, 5))
     fig.patch.set_facecolor(COLORS['bg'])
     ax.set_facecolor(COLORS['card'])
 
     ranges = [r['range'] for r in analysis['price_ranges']]
-    counts = [r['count'] for r in analysis['price_ranges']]
-    bars = ax.bar(ranges, counts, color=COLORS['blue'], edgecolor=COLORS['accent'])
-    for bar, count in zip(bars, counts):
-        if count > 0:
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
-                    str(count), ha='center', color=COLORS['text'], fontsize=12)
+    jd_counts = []
+    tb_counts = []
+    for r in analysis['price_ranges']:
+        lo = r['lo']
+        hi = r['hi']
+        jd_counts.append(len([p for p in analysis['_products'] if p['platform'] == 'jd' and lo <= p['price'] < hi]))
+        tb_counts.append(len([p for p in analysis['_products'] if p['platform'] == 'taobao' and lo <= p['price'] < hi]))
 
-    ax.set_title('电火灶价格区间分布', color=COLORS['text'], fontsize=16, pad=15)
+    import numpy as np
+    x = np.arange(len(ranges))
+    width = 0.35
+    bars1 = ax.bar(x - width/2, jd_counts, width, color=COLORS['jd_red'], label='京东', edgecolor=COLORS['accent'])
+    bars2 = ax.bar(x + width/2, tb_counts, width, color=COLORS['tb_orange'], label='淘宝', edgecolor=COLORS['accent'])
+
+    for bar, count in zip(bars1, jd_counts):
+        if count > 0:
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3, str(count), ha='center', color=COLORS['text'], fontsize=9)
+    for bar, count in zip(bars2, tb_counts):
+        if count > 0:
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3, str(count), ha='center', color=COLORS['text'], fontsize=9)
+
+    ax.set_title('电火灶价格区间分布（京东 vs 淘宝）', color=COLORS['text'], fontsize=16, pad=15)
     ax.set_xlabel('价格区间', color=COLORS['text'], fontsize=12)
     ax.set_ylabel('商品数量', color=COLORS['text'], fontsize=12)
+    ax.set_xticks(x)
+    ax.set_xticklabels(ranges, color=COLORS['text'], fontsize=10, rotation=30, ha='right')
     ax.tick_params(colors=COLORS['text'])
+    ax.legend(facecolor=COLORS['card'], edgecolor=COLORS['text'], labelcolor=COLORS['text'])
     ax.spines['bottom'].set_color(COLORS['text'])
     ax.spines['left'].set_color(COLORS['text'])
     plt.tight_layout()
@@ -255,23 +321,24 @@ def generate_charts(analysis):
     plt.close()
     charts.append('price_distribution.png')
 
-    # 图2: 品牌商品数量对比
-    fig, ax = plt.subplots(figsize=(10, 5))
+    # 图2: 品牌商品数量TOP15
+    fig, ax = plt.subplots(figsize=(10, 6))
     fig.patch.set_facecolor(COLORS['bg'])
     ax.set_facecolor(COLORS['card'])
 
-    top_brands = sorted(analysis['brands'].items(), key=lambda x: -x[1]['count'])[:8]
+    top_brands = list(analysis['brands'].items())[:15]
     brand_names = [b[0] for b in top_brands]
     brand_counts = [b[1]['count'] for b in top_brands]
     brand_colors = [COLORS['red'], COLORS['blue'], COLORS['green'], COLORS['yellow'],
-                    COLORS['purple'], COLORS['orange'], '#74b9ff', '#55efc4']
+                    COLORS['purple'], COLORS['orange'], '#74b9ff', '#55efc4',
+                    '#fab1a0', '#a29bfe', '#fd79a8', '#00cec9', '#e17055', '#0984e3', '#00b894']
 
     bars = ax.barh(brand_names, brand_counts, color=brand_colors[:len(brand_names)])
     for bar, count in zip(bars, brand_counts):
         ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2,
-                str(count), va='center', color=COLORS['text'], fontsize=12)
+                str(count), va='center', color=COLORS['text'], fontsize=11)
 
-    ax.set_title('电火灶品牌商品数量分布', color=COLORS['text'], fontsize=16, pad=15)
+    ax.set_title('电火灶品牌商品数量TOP15', color=COLORS['text'], fontsize=16, pad=15)
     ax.set_xlabel('商品数量', color=COLORS['text'], fontsize=12)
     ax.tick_params(colors=COLORS['text'])
     ax.spines['bottom'].set_color(COLORS['text'])
@@ -282,23 +349,23 @@ def generate_charts(analysis):
     charts.append('brand_distribution.png')
 
     # 图3: 评价数TOP10商品
-    reviewed = sorted([p for p in analysis.get('_products', []) if p['comment_count'] > 0],
-                      key=lambda x: -x['comment_count'])[:10]
+    reviewed = sorted([p for p in analysis['_products'] if (p.get('comment_count') or 0) > 0],
+                      key=lambda x: -(x.get('comment_count') or 0))[:10]
     if reviewed:
         fig, ax = plt.subplots(figsize=(10, 6))
         fig.patch.set_facecolor(COLORS['bg'])
         ax.set_facecolor(COLORS['card'])
 
-        titles = [p['title'][:20] + '...' for p in reviewed]
+        titles = [p['title'][:22] + '...' for p in reviewed]
         comments = [p['comment_count'] for p in reviewed]
-        rates = [p['good_rate'] for p in reviewed]
+        bar_colors = [COLORS['jd_red'] if p['platform'] == 'jd' else COLORS['tb_orange'] for p in reviewed]
 
-        bars = ax.barh(range(len(titles)), comments, color=COLORS['green'], edgecolor=COLORS['accent'])
+        bars = ax.barh(range(len(titles)), comments, color=bar_colors, edgecolor=COLORS['accent'])
         ax.set_yticks(range(len(titles)))
         ax.set_yticklabels(titles, color=COLORS['text'], fontsize=10)
-        for i, (bar, count, rate) in enumerate(zip(bars, comments, rates)):
+        for i, (bar, count) in enumerate(zip(bars, comments)):
             ax.text(bar.get_width() + 20, bar.get_y() + bar.get_height()/2,
-                    f'{count}条 ({rate}%)', va='center', color=COLORS['text'], fontsize=10)
+                    f'{count}条', va='center', color=COLORS['text'], fontsize=10)
 
         ax.set_title('评价数量TOP10商品', color=COLORS['text'], fontsize=16, pad=15)
         ax.set_xlabel('评价数', color=COLORS['text'], fontsize=12)
@@ -340,7 +407,7 @@ def generate_charts(analysis):
     fig.patch.set_facecolor(COLORS['bg'])
     ax.set_facecolor(COLORS['card'])
 
-    top_kws = list(analysis['keywords'].items())[:12]
+    top_kws = list(analysis['keywords'].items())[:15]
     kw_names = [k[0] for k in top_kws]
     kw_counts = [k[1] for k in top_kws]
 
@@ -349,7 +416,7 @@ def generate_charts(analysis):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
                 str(count), ha='center', color=COLORS['text'], fontsize=10)
 
-    ax.set_title('商品标题关键词频率', color=COLORS['text'], fontsize=16, pad=15)
+    ax.set_title('商品标题关键词频率TOP15', color=COLORS['text'], fontsize=16, pad=15)
     ax.set_xlabel('关键词', color=COLORS['text'], fontsize=12)
     ax.set_ylabel('出现次数', color=COLORS['text'], fontsize=12)
     ax.tick_params(colors=COLORS['text'], labelrotation=45)
@@ -360,71 +427,164 @@ def generate_charts(analysis):
     plt.close()
     charts.append('keyword_frequency.png')
 
+    # 图6: 评价关键词分析
+    if review_analysis['keywords']:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        fig.patch.set_facecolor(COLORS['bg'])
+        ax.set_facecolor(COLORS['card'])
+
+        rw_names = list(review_analysis['keywords'].keys())
+        rw_counts = list(review_analysis['keywords'].values())
+        rw_colors = [COLORS['green'] if c in ['火力大', '加热快', '安全', '方便', '口感好', '外观好', '性价比', '质量好', '锅气', '功率高', '清洁']
+                     else COLORS['red'] for c in rw_names]
+
+        bars = ax.bar(rw_names, rw_counts, color=rw_colors, edgecolor=COLORS['accent'])
+        for bar, count in zip(bars, rw_counts):
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.3,
+                    str(count), ha='center', color=COLORS['text'], fontsize=11)
+
+        ax.set_title('用户评价关键词分析', color=COLORS['text'], fontsize=16, pad=15)
+        ax.set_xlabel('关键词', color=COLORS['text'], fontsize=12)
+        ax.set_ylabel('提及次数', color=COLORS['text'], fontsize=12)
+        ax.tick_params(colors=COLORS['text'], labelrotation=45)
+        ax.spines['bottom'].set_color(COLORS['text'])
+        ax.spines['left'].set_color(COLORS['text'])
+        plt.tight_layout()
+        plt.savefig(os.path.join(REPORT_DIR, 'review_keywords.png'), dpi=150, facecolor=COLORS['bg'])
+        plt.close()
+        charts.append('review_keywords.png')
+
+    # 图7: 平台对比
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig.patch.set_facecolor(COLORS['bg'])
+    for ax in axes:
+        ax.set_facecolor(COLORS['card'])
+
+    # 商品数量对比
+    platforms = ['京东', '淘宝']
+    counts = [analysis['jd_count'], analysis['tb_count']]
+    axes[0].bar(platforms, counts, color=[COLORS['jd_red'], COLORS['tb_orange']], edgecolor=COLORS['accent'])
+    for i, v in enumerate(counts):
+        axes[0].text(i, v + 2, str(v), ha='center', color=COLORS['text'], fontsize=14, fontweight='bold')
+    axes[0].set_title('商品数量对比', color=COLORS['text'], fontsize=14)
+    axes[0].tick_params(colors=COLORS['text'])
+
+    # 均价对比
+    jd_prices = [p['price'] for p in analysis['_products'] if p['platform'] == 'jd' and p['price'] > 0]
+    tb_prices = [p['price'] for p in analysis['_products'] if p['platform'] == 'taobao' and p['price'] > 0]
+    avg_prices = [sum(jd_prices)/len(jd_prices) if jd_prices else 0,
+                  sum(tb_prices)/len(tb_prices) if tb_prices else 0]
+    axes[1].bar(platforms, avg_prices, color=[COLORS['jd_red'], COLORS['tb_orange']], edgecolor=COLORS['accent'])
+    for i, v in enumerate(avg_prices):
+        axes[1].text(i, v + 30, f'¥{v:.0f}', ha='center', color=COLORS['text'], fontsize=14, fontweight='bold')
+    axes[1].set_title('平均价格对比', color=COLORS['text'], fontsize=14)
+    axes[1].tick_params(colors=COLORS['text'])
+
+    # 品牌数对比
+    jd_brands = len(set(p['brand'] for p in analysis['_products'] if p['platform'] == 'jd' and p.get('brand')))
+    tb_brands = len(set(p['brand'] for p in analysis['_products'] if p['platform'] == 'taobao' and p.get('brand')))
+    axes[2].bar(platforms, [jd_brands, tb_brands], color=[COLORS['jd_red'], COLORS['tb_orange']], edgecolor=COLORS['accent'])
+    for i, v in enumerate([jd_brands, tb_brands]):
+        axes[2].text(i, v + 0.5, str(v), ha='center', color=COLORS['text'], fontsize=14, fontweight='bold')
+    axes[2].set_title('品牌数量对比', color=COLORS['text'], fontsize=14)
+    axes[2].tick_params(colors=COLORS['text'])
+
+    for ax in axes:
+        ax.spines['bottom'].set_color(COLORS['text'])
+        ax.spines['left'].set_color(COLORS['text'])
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(REPORT_DIR, 'platform_comparison.png'), dpi=150, facecolor=COLORS['bg'])
+    plt.close()
+    charts.append('platform_comparison.png')
+
     return charts
 
 
-def generate_html_report(analysis, charts, products):
+def generate_html_report(analysis, review_analysis, charts, products, reviews):
     """生成HTML报告"""
     now = datetime.now().strftime('%Y-%m-%d %H:%M')
 
     # 商品表格HTML
-    top_products = sorted(products, key=lambda x: -x.get('comment_count', 0))[:20]
+    top_products = sorted(products, key=lambda x: -(x.get('comment_count') or 0))[:25]
     product_rows = ""
     for i, p in enumerate(top_products, 1):
-        title = p['title'][:40] + '...' if len(p['title']) > 40 else p['title']
+        title = p['title'][:40] + '...' if len(p.get('title', '')) > 40 else p.get('title', '')
+        platform_badge = '京东' if p['platform'] == 'jd' else '淘宝'
+        platform_class = 'jd' if p['platform'] == 'jd' else 'tb'
         product_rows += f"""
         <tr>
             <td>{i}</td>
+            <td><span class="badge {platform_class}">{platform_badge}</span></td>
             <td>{title}</td>
             <td>¥{p['price']}</td>
+            <td>{p.get('brand', '-')}</td>
             <td>{p.get('shop_name', '-')}</td>
-            <td>{p.get('comment_count', 0)}</td>
-            <td>{p.get('good_rate', 0)}%</td>
-            <td><a href="{p['url']}" target="_blank">查看</a></td>
+            <td>{p.get('comment_count') or 0}</td>
+            <td>{p.get('good_rate') or 0}%</td>
+            <td><a href="{p.get('url', '#')}" target="_blank">查看</a></td>
         </tr>"""
 
     # 品牌分析HTML
     brand_rows = ""
-    for brand, info in sorted(analysis['brands'].items(), key=lambda x: -x[1]['count']):
-        brand_info = USER_EXPERIENCE_DATA['brand_analysis'].get(brand, {})
+    for brand, info in list(analysis['brands'].items())[:20]:
+        platforms = ', '.join(info.get('platforms', []))
         brand_rows += f"""
         <tr>
             <td><strong>{brand}</strong></td>
             <td>{info['count']}</td>
             <td>¥{info['avg_price']:.0f}</td>
             <td>{info['comments']}</td>
-            <td>{brand_info.get('position', '-')}</td>
-            <td>{brand_info.get('price_range', '-')}</td>
-            <td>{brand_info.get('warranty', '-')}</td>
+            <td>{platforms}</td>
+        </tr>"""
+
+    # 评价内容HTML
+    review_rows = ""
+    for r in reviews[:30]:
+        content = (r.get('content', '') or '')[:100]
+        if len(r.get('content', '') or '') > 100:
+            content += '...'
+        score = r.get('score') or 0
+        if score >= 4:
+            score_badge = '<span class="badge positive">好评</span>'
+        elif score == 3:
+            score_badge = '<span class="badge neutral">中评</span>'
+        elif score > 0:
+            score_badge = '<span class="badge negative">差评</span>'
+        else:
+            score_badge = '<span class="badge neutral">未评分</span>'
+
+        platform = r.get('platform', '')
+        pf_badge = f'<span class="badge {"jd" if platform == "jd" else "tb"}">{("京东" if platform == "jd" else "淘宝")}</span>'
+
+        review_rows += f"""
+        <tr>
+            <td>{pf_badge}</td>
+            <td>{score_badge}</td>
+            <td>{r.get('nickname', '匿名')}</td>
+            <td>{content}</td>
+            <td>{r.get('review_date', '-')}</td>
         </tr>"""
 
     # 优缺点HTML
     pros_html = "".join(f'<li class="pro">{p}</li>' for p in USER_EXPERIENCE_DATA['pros'])
     cons_html = "".join(f'<li class="con">{c}</li>' for c in USER_EXPERIENCE_DATA['cons'])
 
-    # 用户评价HTML
-    feedback_html = ""
-    for fb in USER_EXPERIENCE_DATA['user_feedback']:
-        sentiment_class = 'positive' if fb['sentiment'] == 'positive' else ('negative' if fb['sentiment'] == 'negative' else 'neutral')
-        sentiment_label = '好评' if fb['sentiment'] == 'positive' else ('差评' if fb['sentiment'] == 'negative' else '中性')
-        feedback_html += f"""
-        <div class="feedback-item {sentiment_class}">
-            <span class="feedback-source">{fb['source']}</span>
-            <span class="feedback-sentiment">{sentiment_label}</span>
-            <p>{fb['content']}</p>
-        </div>"""
-
     # 对比分析HTML
     comparison_html = ""
     for pair, desc in USER_EXPERIENCE_DATA['comparisons'].items():
         comparison_html += f'<div class="comparison-item"><strong>{pair}</strong><p>{desc}</p></div>'
+
+    # 平台对比数据
+    jd_data = analysis['platforms'].get('jd', {})
+    tb_data = analysis['platforms'].get('taobao', {})
 
     html = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>电火灶电商数据分析报告</title>
+    <title>电火灶电商数据分析报告（京东+淘宝）</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ background: #0f0f1e; color: #e0e0e0; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.6; }}
@@ -432,10 +592,11 @@ def generate_html_report(analysis, charts, products):
         h1 {{ text-align: center; color: #e94560; font-size: 28px; margin: 30px 0 10px; }}
         .subtitle {{ text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }}
         h2 {{ color: #0984e3; font-size: 22px; margin: 30px 0 15px; border-left: 4px solid #e94560; padding-left: 12px; }}
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }}
+        h3 {{ color: #fdcb6e; font-size: 18px; margin: 20px 0 10px; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }}
         .stat-card {{ background: #16213e; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #0f3460; }}
-        .stat-card .value {{ font-size: 32px; font-weight: bold; color: #e94560; }}
-        .stat-card .label {{ color: #888; font-size: 14px; margin-top: 5px; }}
+        .stat-card .value {{ font-size: 28px; font-weight: bold; color: #e94560; }}
+        .stat-card .label {{ color: #888; font-size: 13px; margin-top: 5px; }}
         .chart-container {{ background: #1a1a2e; border-radius: 12px; padding: 15px; margin: 20px 0; text-align: center; }}
         .chart-container img {{ max-width: 100%; border-radius: 8px; }}
         table {{ width: 100%; border-collapse: collapse; margin: 15px 0; background: #16213e; border-radius: 8px; overflow: hidden; }}
@@ -444,40 +605,73 @@ def generate_html_report(analysis, charts, products):
         tr:hover {{ background: #1a1a3e; }}
         a {{ color: #0984e3; text-decoration: none; }}
         a:hover {{ text-decoration: underline; }}
+        .badge {{ display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }}
+        .badge.jd {{ background: rgba(233,69,96,0.2); color: #e94560; border: 1px solid #e94560; }}
+        .badge.tb {{ background: rgba(255,102,0,0.2); color: #ff6600; border: 1px solid #ff6600; }}
+        .badge.positive {{ background: rgba(0,184,148,0.2); color: #00b894; }}
+        .badge.negative {{ background: rgba(233,69,96,0.2); color: #e94560; }}
+        .badge.neutral {{ background: rgba(253,203,110,0.2); color: #fdcb6e; }}
         .pros-cons {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }}
         .pros-cons > div {{ background: #16213e; border-radius: 12px; padding: 20px; }}
         .pro {{ color: #00b894; margin: 8px 0; padding-left: 20px; position: relative; list-style: none; }}
-        .pro::before {{ content: '✅'; position: absolute; left: 0; }}
+        .pro::before {{ content: '\\2705'; position: absolute; left: 0; }}
         .con {{ color: #e94560; margin: 8px 0; padding-left: 20px; position: relative; list-style: none; }}
-        .con::before {{ content: '❌'; position: absolute; left: 0; }}
-        .feedback-item {{ background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 3px solid #555; }}
-        .feedback-item.positive {{ border-left-color: #00b894; }}
-        .feedback-item.negative {{ border-left-color: #e94560; }}
-        .feedback-item.neutral {{ border-left-color: #fdcb6e; }}
-        .feedback-source {{ display: inline-block; background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 10px; }}
-        .feedback-sentiment {{ font-size: 12px; color: #888; }}
-        .feedback-item p {{ margin-top: 8px; color: #ccc; }}
+        .con::before {{ content: '\\274C'; position: absolute; left: 0; }}
         .comparison-item {{ background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; }}
         .comparison-item strong {{ color: #fdcb6e; }}
         .comparison-item p {{ margin-top: 8px; color: #ccc; }}
+        .platform-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }}
+        .platform-card {{ background: #16213e; border-radius: 12px; padding: 20px; border: 1px solid #0f3460; }}
+        .platform-card h3 {{ margin-top: 0; }}
+        .platform-card.jd {{ border-top: 3px solid #e94560; }}
+        .platform-card.tb {{ border-top: 3px solid #ff6600; }}
         .footer {{ text-align: center; color: #555; margin: 40px 0 20px; font-size: 13px; }}
+        .review-table td:nth-child(4) {{ max-width: 400px; }}
     </style>
 </head>
 <body>
 <div class="container">
     <h1>电火灶电商数据分析报告</h1>
-    <p class="subtitle">数据来源：京东商城 | 生成时间：{now} | 采集商品：{analysis['total']}个</p>
+    <p class="subtitle">数据来源：京东商城 + 淘宝商城 | 生成时间：{now} | 采集商品：{analysis['total']}个 | 评价：{review_analysis['total']}条</p>
 
     <h2>📊 数据概览</h2>
     <div class="stats-grid">
         <div class="stat-card"><div class="value">{analysis['total']}</div><div class="label">总商品数</div></div>
-        <div class="stat-card"><div class="value">{analysis['with_price']}</div><div class="label">有价格数据</div></div>
-        <div class="stat-card"><div class="value">{analysis['with_shop']}</div><div class="label">有店铺信息</div></div>
+        <div class="stat-card"><div class="value">{analysis['jd_count']}</div><div class="label">京东商品</div></div>
+        <div class="stat-card"><div class="value">{analysis['tb_count']}</div><div class="label">淘宝商品</div></div>
+        <div class="stat-card"><div class="value">{analysis['with_brand']}</div><div class="label">有品牌信息</div></div>
+        <div class="stat-card"><div class="value">{analysis['brand_count']}</div><div class="label">品牌总数</div></div>
         <div class="stat-card"><div class="value">{analysis['with_reviews']}</div><div class="label">有评价数据</div></div>
         <div class="stat-card"><div class="value">{analysis.get('total_comments', 0)}</div><div class="label">总评价数</div></div>
+        <div class="stat-card"><div class="value">{review_analysis['total']}</div><div class="label">评价文本</div></div>
         <div class="stat-card"><div class="value">¥{analysis.get('price_avg', 0):.0f}</div><div class="label">平均价格</div></div>
         <div class="stat-card"><div class="value">¥{analysis.get('price_min', 0)}</div><div class="label">最低价格</div></div>
         <div class="stat-card"><div class="value">¥{analysis.get('price_max', 0)}</div><div class="label">最高价格</div></div>
+        <div class="stat-card"><div class="value">{analysis.get('avg_good_rate', 0):.1f}%</div><div class="label">平均好评率</div></div>
+    </div>
+
+    <h2>🏪 平台对比分析</h2>
+    <div class="chart-container"><img src="report/platform_comparison.png" alt="平台对比"></div>
+
+    <div class="platform-grid">
+        <div class="platform-card jd">
+            <h3 style="color:#e94560;">京东</h3>
+            <p><strong>商品数：</strong>{analysis['jd_count']}</p>
+            <p><strong>品牌数：</strong>{jd_data.get('brand_count', 0)}</p>
+            <p><strong>价格区间：</strong>¥{jd_data.get('min_price', 0):.0f} - ¥{jd_data.get('max_price', 0):.0f}</p>
+            <p><strong>平均价格：</strong>¥{jd_data.get('avg_price', 0):.0f}</p>
+            <p><strong>总评价数：</strong>{jd_data.get('comments', 0)}</p>
+            <p><strong>主要品牌：</strong>{', '.join(jd_data.get('brands', [])[:8])}</p>
+        </div>
+        <div class="platform-card tb">
+            <h3 style="color:#ff6600;">淘宝</h3>
+            <p><strong>商品数：</strong>{analysis['tb_count']}</p>
+            <p><strong>品牌数：</strong>{tb_data.get('brand_count', 0)}</p>
+            <p><strong>价格区间：</strong>¥{tb_data.get('min_price', 0):.0f} - ¥{tb_data.get('max_price', 0):.0f}</p>
+            <p><strong>平均价格：</strong>¥{tb_data.get('avg_price', 0):.0f}</p>
+            <p><strong>总评价数：</strong>{tb_data.get('comments', 0)}</p>
+            <p><strong>主要品牌：</strong>{', '.join(tb_data.get('brands', [])[:8])}</p>
+        </div>
     </div>
 
     <h2>📈 价格区间分布</h2>
@@ -487,7 +681,7 @@ def generate_html_report(analysis, charts, products):
     <div class="chart-container"><img src="report/brand_distribution.png" alt="品牌分布"></div>
 
     <table>
-        <tr><th>品牌</th><th>商品数</th><th>均价</th><th>总评价数</th><th>定位</th><th>价格区间</th><th>售后</th></tr>
+        <tr><th>品牌</th><th>商品数</th><th>均价</th><th>总评价数</th><th>平台分布</th></tr>
         {brand_rows}
     </table>
 
@@ -495,7 +689,7 @@ def generate_html_report(analysis, charts, products):
     <div class="chart-container"><img src="report/review_top10.png" alt="评价TOP10"></div>
 
     <table>
-        <tr><th>#</th><th>商品标题</th><th>价格</th><th>店铺</th><th>评价数</th><th>好评率</th><th>链接</th></tr>
+        <tr><th>#</th><th>平台</th><th>商品标题</th><th>价格</th><th>品牌</th><th>店铺</th><th>评价数</th><th>好评率</th><th>链接</th></tr>
         {product_rows}
     </table>
 
@@ -517,30 +711,21 @@ def generate_html_report(analysis, charts, products):
     <h2>🔄 竞品对比</h2>
     {comparison_html}
 
-    <h2>📝 用户真实反馈</h2>
-    {feedback_html}
+    <h2>📝 用户评价文本（来自数据库）</h2>
+    <div class="chart-container"><img src="report/review_keywords.png" alt="评价关键词"></div>
+
+    <table class="review-table">
+        <tr><th>平台</th><th>评价</th><th>用户</th><th>内容</th><th>日期</th></tr>
+        {review_rows}
+    </table>
 
     <h2>🔑 商品关键词分析</h2>
     <div class="chart-container"><img src="report/keyword_frequency.png" alt="关键词频率"></div>
 
-    <h2>📋 品牌深度分析</h2>"""
-
-    for brand, info in USER_EXPERIENCE_DATA['brand_analysis'].items():
-        html += f"""
-    <div class="comparison-item">
-        <strong style="font-size:18px;">{brand}</strong>
-        <p><strong>定位：</strong>{info['position']}</p>
-        <p><strong>市场份额：</strong>{info['market_share']}</p>
-        <p><strong>特点：</strong>{info['features']}</p>
-        <p><strong>价格区间：</strong>{info['price_range']}</p>
-        <p><strong>主要型号：</strong>{info['key_models']}</p>
-        <p><strong>售后政策：</strong>{info['warranty']}</p>
-    </div>"""
-
-    html += f"""
     <div class="footer">
         <p>数据采集方式：CDP浏览器自动化 + WebSearch聚合</p>
-        <p>数据库：SQLite ({analysis['total']}条商品记录)</p>
+        <p>数据库：SQLite ({analysis['total']}条商品 + {review_analysis['total']}条评价)</p>
+        <p>平台：京东({analysis['jd_count']}) + 淘宝({analysis['tb_count']})</p>
         <p>生成时间：{now}</p>
     </div>
 </div>
@@ -553,7 +738,7 @@ def generate_html_report(analysis, charts, products):
     return report_path
 
 
-def export_csv(products):
+def export_csv(products, reviews):
     """导出CSV"""
     csv_path = os.path.join(DATA_DIR, "products_export.csv")
     with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
@@ -566,63 +751,88 @@ def export_csv(products):
         writer.writeheader()
         for p in products:
             writer.writerow({k: p.get(k, '') for k in writer.fieldnames})
-    return csv_path
+
+    # Reviews CSV
+    review_csv_path = os.path.join(DATA_DIR, "reviews_export.csv")
+    with open(review_csv_path, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=[
+            'review_id', 'product_id', 'platform', 'product_name', 'brand',
+            'content', 'score', 'nickname', 'review_date', 'variant', 'images'
+        ])
+        writer.writeheader()
+        for r in reviews:
+            writer.writerow({k: r.get(k, '') for k in writer.fieldnames})
+
+    return csv_path, review_csv_path
 
 
-def export_json(analysis):
+def export_json(analysis, review_analysis):
     """导出完整数据JSON"""
     json_path = os.path.join(DATA_DIR, "analysis_report.json")
 
-    # 序列化
     export_data = {
         'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'summary': {
             'total_products': analysis['total'],
-            'total_reviews': analysis.get('total_comments', 0),
+            'jd_products': analysis['jd_count'],
+            'taobao_products': analysis['tb_count'],
+            'total_brands': analysis['brand_count'],
+            'total_comments': analysis.get('total_comments', 0),
+            'total_reviews': review_analysis['total'],
             'avg_price': analysis.get('price_avg', 0),
+            'min_price': analysis.get('price_min', 0),
+            'max_price': analysis.get('price_max', 0),
             'avg_good_rate': analysis.get('avg_good_rate', 0),
         },
-        'brands': {k: {kk: vv for kk, vv in v.items() if kk != 'shops'} for k, v in analysis['brands'].items()},
+        'platforms': {k: {kk: vv for kk, vv in v.items() if kk != 'brands'} for k, v in analysis['platforms'].items()},
+        'brands': {k: {kk: vv for kk, vv in v.items() if kk != 'platforms'} for k, v in analysis['brands'].items()},
+        'review_analysis': review_analysis,
         'user_experience': USER_EXPERIENCE_DATA,
+        'keywords': analysis['keywords'],
+        'price_ranges': analysis['price_ranges'],
     }
 
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(export_data, f, ensure_ascii=False, indent=2)
+        json.dump(export_data, f, ensure_ascii=False, indent=2, default=str)
     return json_path
 
 
 def main():
-    print("[1/5] 加载数据库...")
+    print("[1/6] 加载数据库...")
     products, reviews, search_logs = load_data()
     print(f"  商品: {len(products)} 评价: {len(reviews)} 搜索日志: {len(search_logs)}")
 
-    print("[2/5] 分析数据...")
+    print("[2/6] 分析商品数据...")
     analysis = analyze_products(products)
-    analysis['_products'] = products
-    print(f"  品牌: {len(analysis['brands'])} 店铺: {len(analysis['shops'])}")
+    print(f"  品牌: {analysis['brand_count']} 店铺: {len(analysis['shops'])}")
+    print(f"  京东: {analysis['jd_count']} 淘宝: {analysis['tb_count']}")
     print(f"  总评价数: {analysis.get('total_comments', 0)}")
 
-    print("[3/5] 生成图表...")
-    charts = generate_charts(analysis)
+    print("[3/6] 分析评价数据...")
+    review_analysis = analyze_reviews(reviews)
+    print(f"  评价: {review_analysis['total']} (好评:{review_analysis['positive_count']} 中评:{review_analysis['neutral_count']} 差评:{review_analysis['negative_count']})")
+
+    print("[4/6] 生成图表...")
+    charts = generate_charts(analysis, review_analysis)
     print(f"  生成 {len(charts)} 张图表: {charts}")
 
-    print("[4/5] 生成HTML报告...")
-    report_path = generate_html_report(analysis, charts, products)
+    print("[5/6] 生成HTML报告...")
+    report_path = generate_html_report(analysis, review_analysis, charts, products, reviews)
     print(f"  报告: {report_path}")
 
-    print("[5/5] 导出数据文件...")
-    csv_path = export_csv(products)
-    json_path = export_json(analysis)
+    print("[6/6] 导出数据文件...")
+    csv_path, review_csv_path = export_csv(products, reviews)
+    json_path = export_json(analysis, review_analysis)
     print(f"  CSV: {csv_path}")
+    print(f"  Reviews CSV: {review_csv_path}")
     print(f"  JSON: {json_path}")
 
-    print(f"\n{'='*50}")
+    print(f"\n{'='*60}")
     print(f"  报告生成完成！")
-    print(f"  商品数: {analysis['total']}")
-    print(f"  总评价: {analysis.get('total_comments', 0)}")
-    print(f"  品牌数: {len(analysis['brands'])}")
+    print(f"  京东商品: {analysis['jd_count']} | 淘宝商品: {analysis['tb_count']}")
+    print(f"  品牌数: {analysis['brand_count']} | 评价文本: {review_analysis['total']}")
     print(f"  图表数: {len(charts)}")
-    print(f"{'='*50}")
+    print(f"{'='*60}")
 
 
 if __name__ == "__main__":

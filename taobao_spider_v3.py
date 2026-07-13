@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """
-淘宝电火灶爬虫 - CDP浏览器自动化
-- 使用独立Chrome实例（端口9223）
-- 等待用户手动登录淘宝
-- 搜索关键词：电火灶、电焰灶、电燃灶
-- 提取商品数据：标题、价格、店铺、销量、URL
-- 数据写入SQLite (platform='taobao')
+淘宝电火灶爬虫 v3 - 先登录后搜索
+解决淘宝不跳转登录页直接返回空结果的问题
 """
 import json
 import time
@@ -19,50 +15,95 @@ import requests
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "data", "ecommerce.db")
 
-KEYWORDS = ["电火灶", "电焰灶", "电燃灶", "电火灶 商用", "电火灶 家用", "电火灶 双灶"]
-PAGES_PER_KEYWORD = 2
+KEYWORDS = ["电火灶", "电焰灶", "电燃灶", "电火灶商用", "电火灶家用", "电火灶双灶"]
+PAGES_PER_KEYWORD = 3
 
-# Taobao搜索结果提取JS
+
+def ensure_chrome(port=9223):
+    try:
+        resp = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=2)
+        if resp.status_code == 200:
+            print(f"  [Chrome] 端口 {port} 已就绪")
+            return True
+    except Exception:
+        pass
+
+    chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    if not os.path.exists(chrome_path):
+        print("  [Chrome] 未找到Chrome!")
+        return False
+
+    subprocess.Popen([
+        chrome_path,
+        f"--remote-debugging-port={port}",
+        "--remote-allow-origins=*",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--no-sandbox",
+        "--disable-gpu",
+        "--user-data-dir=/tmp/chrome_taobao",
+        "--window-size=1920,1080",
+        "about:blank",
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    for _ in range(15):
+        time.sleep(1)
+        try:
+            resp = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=2)
+            if resp.status_code == 200:
+                print(f"  [Chrome] 端口 {port} 已启动")
+                return True
+        except Exception:
+            pass
+
+    print("  [Chrome] 启动失败!")
+    return False
+
+
+# 淘宝搜索结果提取JS - 更全面的选择器
 EXTRACT_JS = r"""
 (function() {
     try {
         var results = [];
         var seen = {};
 
-        // 淘宝搜索结果卡片选择器（多种可能）
-        var selectors = [
-            '[class*="Content--content"]',
-            '[class*="Card--doubleCardWrapper"]',
-            'div[class*="m-itemlist"] div.items',
-            '[data-spm*="dlist"]',
-            '.J_TItems .item',
+        // 策略1: 淘宝新版搜索结果 (Content--contentInner 等 hashed class)
+        var cardSelectors = [
+            '[class*="Content--contentInner"]',
+            '[class*="Card--doubleCard"]',
+            '[class*="Card--singleCard"]',
+            '[class*="m-itemlist"] div.items .item',
+            '[class*="SearchItem"]',
             '[class*="offer-list"] [class*="offer-card"]',
-            'div[class*="SearchItem"]',
-            '[class*="search-content"] [class*="item"]'
+            '[class*="search-content"] [class*="item"]',
+            'div[data-spm*="dlist"]',
+            '.J_TItems .item',
+            'div[class*="DoubleCardWrapper"]'
         ];
 
         var cards = [];
-        for (var s = 0; s < selectors.length; s++) {
-            var found = document.querySelectorAll(selectors[s]);
+        for (var s = 0; s < cardSelectors.length; s++) {
+            var found = document.querySelectorAll(cardSelectors[s]);
             if (found.length > 0) {
                 cards = found;
+                console.log('Found with selector: ' + cardSelectors[s] + ' count=' + found.length);
                 break;
             }
         }
 
-        // 如果没找到，用通用方法搜索包含价格和标题的容器
+        // 策略2: 如果没找到卡片，用通用方法找包含价格和标题的容器
         if (cards.length === 0) {
             var allDivs = document.querySelectorAll('div');
-            for (var i = 0; i < allDivs.length; i++) {
+            for (var i = 0; i < allDivs.length && cards.length < 100; i++) {
                 var d = allDivs[i];
-                var hasPrice = false;
-                var hasTitle = false;
                 var children = d.children;
-                if (children.length > 1 && children.length < 10) {
+                if (children.length >= 2 && children.length <= 12) {
+                    var hasPrice = false;
+                    var hasTitle = false;
                     for (var j = 0; j < children.length; j++) {
-                        var t = children[j].textContent;
-                        if (t && t.match(/\d+\.\d{2}/) && t.length < 20) hasPrice = true;
-                        if (t && t.length > 10 && t.length < 200) hasTitle = true;
+                        var t = children[j].textContent || '';
+                        if (t.match(/\d+\.\d{2}/) && t.length < 20) hasPrice = true;
+                        if (t.length > 10 && t.length < 200) hasTitle = true;
                     }
                     if (hasPrice && hasTitle) {
                         cards.push(d);
@@ -71,7 +112,18 @@ EXTRACT_JS = r"""
             }
         }
 
-        for (var i = 0; i < cards.length && i < 60; i++) {
+        // 策略3: 查找所有带链接的元素，看是否是商品
+        if (cards.length === 0) {
+            var links = document.querySelectorAll('a[href*="item.taobao"], a[href*="detail.tmall"], a[href*="chaoshi.detail"], a[href*="a.m.taobao"]');
+            for (var i = 0; i < links.length; i++) {
+                var parent = links[i].closest('div, li, article');
+                if (parent && parent.textContent.length > 10) {
+                    cards.push(parent);
+                }
+            }
+        }
+
+        for (var i = 0; i < cards.length && i < 80; i++) {
             var card = cards[i];
             var cardText = card.textContent || '';
 
@@ -92,7 +144,6 @@ EXTRACT_JS = r"""
 
             if (!title || title.length < 5) continue;
 
-            // 去重
             var titleKey = title.substring(0, 30);
             if (seen[titleKey]) continue;
             seen[titleKey] = true;
@@ -106,11 +157,8 @@ EXTRACT_JS = r"""
                 if (m && t.length < 15) {
                     var p = parseFloat(m[1]);
                     if (p > 50 && p < 100000) {
-                        // 检查是否是价格（前面有¥或￥符号，或在price class中）
                         var cls = priceEls[j].className || '';
-                        var prevText = priceEls[j].previousElementSibling ? priceEls[j].previousElementSibling.textContent : '';
                         if (cls.indexOf('price') > -1 || cls.indexOf('Price') > -1 ||
-                            prevText.indexOf('\u00a5') > -1 || prevText.indexOf('\uffe5') > -1 ||
                             t.indexOf('\u00a5') > -1 || t.indexOf('\uffe5') > -1) {
                             price = p;
                             break;
@@ -118,7 +166,6 @@ EXTRACT_JS = r"""
                     }
                 }
             }
-            // 如果没找到价格，尝试找最大的数字（可能是价格）
             if (!price) {
                 for (var j = 0; j < priceEls.length; j++) {
                     var t = priceEls[j].textContent.trim();
@@ -132,10 +179,11 @@ EXTRACT_JS = r"""
 
             // 提取店铺名
             var shop = '';
-            var shopEls = card.querySelectorAll('a, span, div, [class*="shop"], [class*="Shop"], [class*="store"], [class*="Store"]');
+            var shopEls = card.querySelectorAll('a, span, div, [class*="shop"], [class*="Shop"], [class*="store"], [class*="Store"], [class*="nick"]');
             for (var j = 0; j < shopEls.length; j++) {
                 var t = shopEls[j].textContent.trim();
-                if (t.indexOf('\u5e97') > -1 && t.length < 30) {
+                if (t.length > 1 && t.length < 30 &&
+                    (t.indexOf('\u5e97') > -1 || t.indexOf('\u65d7\u8230') > -1 || t.indexOf('\u4e13\u8425') > -1)) {
                     shop = t;
                     break;
                 }
@@ -143,10 +191,10 @@ EXTRACT_JS = r"""
 
             // 提取销量
             var sales = '';
-            var salesEls = card.querySelectorAll('span, div, [class*="sale"], [class*="Sale"], [class*="deal"], [class*="Deal"]');
+            var salesEls = card.querySelectorAll('span, div, [class*="sale"], [class*="Sale"], [class*="deal"], [class*="Deal"], [class*="realSales"]');
             for (var j = 0; j < salesEls.length; j++) {
                 var t = salesEls[j].textContent.trim();
-                if ((t.indexOf('\u4ed8') > -1 || t.indexOf('\u4ef6') > -1 || t.indexOf('\u4eba') > -1 || t.indexOf('\u8d2d\u4e70') > -1) && t.length < 30) {
+                if ((t.indexOf('\u4ed8') > -1 || t.indexOf('\u4ef6') > -1 || t.indexOf('\u4eba') > -1 || t.indexOf('\u8d2d\u4e70') > -1 || t.indexOf('\u6708\u9500') > -1) && t.length < 30) {
                     sales = t;
                     break;
                 }
@@ -154,16 +202,16 @@ EXTRACT_JS = r"""
 
             // 提取链接
             var link = '';
-            var linkEl = card.querySelector('a[href*="item.taobao"], a[href*="detail.tmall"], a[href*="chaoshi.detail"]');
+            var linkEl = card.querySelector('a[href*="item.taobao"], a[href*="detail.tmall"], a[href*="chaoshi.detail"], a[href*="a.m.taobao"]');
             if (linkEl) link = linkEl.href;
             if (!link) {
                 var anyLink = card.querySelector('a[href]');
                 if (anyLink) link = anyLink.href;
             }
 
-            // 提取位置/地域
+            // 提取位置
             var location = '';
-            var locEls = card.querySelectorAll('span, div, [class*="location"], [class*="Location"], [class*="area"]');
+            var locEls = card.querySelectorAll('span, div, [class*="location"], [class*="Location"], [class*="area"], [class*="ship"]');
             for (var j = 0; j < locEls.length; j++) {
                 var t = locEls[j].textContent.trim();
                 if (t.length >= 2 && t.length <= 10 && /^[\u4e00-\u9fa5]+$/.test(t) &&
@@ -173,7 +221,7 @@ EXTRACT_JS = r"""
                 }
             }
 
-            // 提取商品图片URL
+            // 提取图片URL
             var imgUrl = '';
             var imgEl = card.querySelector('img[src], img[data-src]');
             if (imgEl) {
@@ -200,49 +248,7 @@ EXTRACT_JS = r"""
 """
 
 
-def ensure_chrome_taobao(port=9223):
-    """启动独立Chrome实例用于淘宝采集"""
-    try:
-        resp = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=2)
-        if resp.status_code == 200:
-            print(f"  [Chrome-Taobao] 调试端口 {port} 已就绪")
-            return True
-    except Exception:
-        pass
-
-    chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    if not os.path.exists(chrome_path):
-        print("  [Chrome-Taobao] 未找到Chrome!")
-        return False
-
-    subprocess.Popen([
-        chrome_path,
-        f"--remote-debugging-port={port}",
-        "--remote-allow-origins=*",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--no-sandbox",
-        "--disable-gpu",
-        "--user-data-dir=/tmp/chrome_taobao",
-        "--window-size=1920,1080",
-        "about:blank",
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-    for _ in range(10):
-        time.sleep(1)
-        try:
-            resp = requests.get(f"http://127.0.0.1:{port}/json/version", timeout=2)
-            if resp.status_code == 200:
-                print(f"  [Chrome-Taobao] 调试端口 {port} 已启动")
-                return True
-        except Exception:
-            pass
-
-    print("  [Chrome-Taobao] 启动失败!")
-    return False
-
-
-class TaobaoSpider:
+class TaobaoSpiderV3:
     def __init__(self):
         sys.path.insert(0, BASE_DIR)
         from cdp_browser import CDPBrowser
@@ -295,120 +301,134 @@ class TaobaoSpider:
                 UNIQUE(product_id, content, nickname, review_date)
             )
         """)
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS search_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                keyword     TEXT,
-                page        INTEGER,
-                platform    TEXT,
-                result_count INTEGER,
-                created_at  TEXT DEFAULT (datetime('now', 'localtime'))
-            )
-        """)
         self.db.commit()
 
     def start_browser(self):
-        ensure_chrome_taobao(9223)
+        ensure_chrome(9223)
         self.browser = self.CDPBrowser("127.0.0.1", 9223)
         self.browser.block_resources()
-        print("[浏览器] 淘宝采集Chrome已启动 (端口9223)")
+        print("[浏览器] Chrome已启动 (端口9223)", flush=True)
 
     def wait_for_login(self, max_wait=300):
-        """检测淘宝登录页，等待用户手动登录"""
-        url = self.browser.get_url() or ""
-        title = self.browser.get_title() or ""
+        """强制导航到淘宝登录页，等待用户登录"""
+        print("\n" + "=" * 60, flush=True)
+        print("  请在Chrome浏览器中登录淘宝/天猫", flush=True)
+        print("  支持扫码登录或账号密码登录", flush=True)
+        print("  登录成功后脚本自动继续", flush=True)
+        print(f"  最多等待 {max_wait} 秒", flush=True)
+        print("=" * 60 + "\n", flush=True)
 
-        if "login" in url.lower() or "登录" in title or "login.taobao" in url:
-            print("\n" + "=" * 60)
-            print("  ⚠️  检测到淘宝登录页面！")
-            print("  请在弹出的Chrome浏览器中手动登录淘宝/天猫")
-            print("  支持扫码登录或账号密码登录")
-            print("  登录成功后，脚本会自动检测并继续采集")
-            print(f"  最多等待 {max_wait} 秒...")
-            print("=" * 60 + "\n")
+        # 导航到登录页
+        self.browser.navigate("https://login.taobao.com/", wait_sec=3)
 
-            start = time.time()
-            while time.time() - start < max_wait:
-                time.sleep(3)
-                current_url = self.browser.get_url() or ""
-                current_title = self.browser.get_title() or ""
+        start = time.time()
+        logged_in = False
+        while time.time() - start < max_wait:
+            time.sleep(3)
+            current_url = self.browser.get_url() or ""
+            current_title = self.browser.get_title() or ""
 
-                if "login" not in current_url.lower() and "login.taobao" not in current_url:
-                    if "登录" not in current_title:
-                        print("\n[登录] ✅ 检测到登录成功！继续采集...\n")
-                        time.sleep(2)
-                        return True
+            # 检测是否已离开登录页
+            if "login.taobao" not in current_url and "login.tmall" not in current_url:
+                if "login" not in current_title.lower() and "登录" not in current_title:
+                    # 再验证一下：访问淘宝首页看是否已登录
+                    self.browser.navigate("https://www.taobao.com/", wait_sec=2)
+                    page_text = self.browser.evaluate("document.body.innerText") or ""
+                    # 检查是否有登录后的元素（如"我的淘宝"、用户名等）
+                    if "我的淘宝" in page_text or "已登录" in page_text or "购物车" in page_text:
+                        print("[登录] 检测到登录成功！继续采集...\n", flush=True)
+                        logged_in = True
+                        break
                     else:
+                        # 可能还是未登录，继续等
                         elapsed = int(time.time() - start)
-                        print(f"  [登录] 等待中... ({elapsed}s)")
+                        print(f"  [登录] 等待中... ({elapsed}s) URL: {current_url[:50]}", flush=True)
                 else:
                     elapsed = int(time.time() - start)
-                    print(f"  [登录] 等待中... ({elapsed}s)")
+                    print(f"  [登录] 等待中... ({elapsed}s)", flush=True)
+            else:
+                elapsed = int(time.time() - start)
+                print(f"  [登录] 等待中... ({elapsed}s)", flush=True)
 
-            print("\n[登录] ⏰ 等待超时，跳过")
-            return False
-        return True
+        if not logged_in:
+            print("[登录] 超时，尝试直接搜索（可能只能看到部分结果）", flush=True)
+
+        return logged_in
 
     def scrape_search_page(self, keyword, page=1):
         """爬取淘宝搜索结果页"""
         url = f"https://s.taobao.com/search?q={keyword}&s={(page-1)*44}"
 
-        print(f"\n[搜索] 关键词='{keyword}' 第{page}页")
+        print(f"\n[搜索] 关键词='{keyword}' 第{page}页", flush=True)
         self.browser.navigate(url, wait_sec=5)
-
-        # 检查登录
-        if not self.wait_for_login():
-            return []
 
         # 等待页面渲染
         time.sleep(3)
 
         # 滚动触发懒加载
-        for i in range(5):
-            self.browser.evaluate(f"window.scrollTo(0, {800 * (i + 1)})")
+        for i in range(6):
+            self.browser.evaluate(f"window.scrollTo(0, {600 * (i + 1)})")
             time.sleep(0.5)
-        time.sleep(1)
+        time.sleep(2)
 
-        # 检查是否有商品
+        # 检查页面内容
         page_text = self.browser.evaluate("document.body.innerText") or ""
         if len(page_text) < 100:
-            print("  [搜索] 页面内容过少，可能未加载")
+            print("  [搜索] 页面内容过少，可能未加载", flush=True)
+            # 保存调试HTML
+            debug_path = os.path.join(BASE_DIR, "data", f"taobao_debug_{keyword}_p{page}.html")
+            html = self.browser.get_html() or ""
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(f"  [调试] HTML已保存: {debug_path}", flush=True)
+            return []
+
+        # 检查是否需要登录
+        if "请登录" in page_text or "登录后查看" in page_text or "你还没有登录" in page_text:
+            print("  [搜索] 检测到需要登录！请先登录", flush=True)
+            self.wait_for_login(180)
+            # 重新搜索
+            self.browser.navigate(url, wait_sec=5)
+            time.sleep(3)
+            for i in range(4):
+                self.browser.evaluate(f"window.scrollTo(0, {600 * (i + 1)})")
+                time.sleep(0.5)
+            time.sleep(2)
+
+        # 提取商品
+        products_json = self.browser.evaluate(EXTRACT_JS)
+
+        if not products_json:
+            print("  [搜索] evaluate返回空", flush=True)
+            # 保存调试HTML
             debug_path = os.path.join(BASE_DIR, "data", f"taobao_debug_{keyword}_p{page}.html")
             html = self.browser.get_html() or ""
             with open(debug_path, "w", encoding="utf-8") as f:
                 f.write(html)
             return []
 
-        # 提取商品
-        products_json = self.browser.evaluate(EXTRACT_JS)
-
-        if not products_json:
-            print("  [搜索] evaluate返回空")
-            return []
-
         try:
             data = json.loads(products_json)
         except:
-            print(f"  [搜索] JSON解析失败")
+            print(f"  [搜索] JSON解析失败", flush=True)
             return []
 
         if isinstance(data, dict) and "error" in data:
-            print(f"  [搜索] JS错误: {data['error']}")
+            print(f"  [搜索] JS错误: {data['error']}", flush=True)
             return []
 
         products = data if isinstance(data, list) else []
-        print(f"  [搜索] 提取到 {len(products)} 个商品")
+        print(f"  [搜索] 提取到 {len(products)} 个商品", flush=True)
 
         for p in products[:5]:
-            print(f"    - {p['title'][:50]}")
-            print(f"      ¥{p['price']} {p.get('shop_name','')} {p.get('sales_text','')}")
+            print(f"    - {p['title'][:50]}", flush=True)
+            print(f"      ¥{p['price']} {p.get('shop_name','')} {p.get('sales_text','')}", flush=True)
 
         return products
 
     def save_product(self, product, keyword):
         c = self.db.cursor()
 
-        # 生成唯一product_id
         url = product.get("url", "")
         product_id = ""
         if url:
@@ -416,11 +436,12 @@ class TaobaoSpider:
             if m:
                 product_id = "tb_" + m.group(1)
             else:
-                product_id = "tb_" + str(hash(url) % 10**15)
+                m = re.search(r'(\d{10,})', url)
+                if m:
+                    product_id = "tb_" + m.group(1)
         if not product_id:
-            product_id = "tb_" + str(hash(product.get("title", "")) % 10**15)
+            product_id = "tb_" + str(abs(hash(product.get("title", ""))) % 10**15)
 
-        # 从标题提取品牌
         brand = self._extract_brand(product.get("title", ""))
 
         c.execute("""
@@ -449,7 +470,8 @@ class TaobaoSpider:
                   "德玛仕", "老板", "尚朋堂", "硕高", "国爱", "九电", "燚龙",
                   "东洋", "内芙", "富得莱", "微致", "德克士", "志高", "欢度",
                   "奥田美太", "西屋", "TINME", "红日", "万和", "半球", "方太",
-                  "苏泊尔", "九阳", "海尔", "格力", "艾美特"]
+                  "苏泊尔", "九阳", "海尔", "格力", "艾美特", "万喜", "樱花",
+                  "帅丰", "美大", "森歌", "亿田", "火星人", "金利集成"]
         for b in brands:
             if b in title:
                 return b
@@ -467,26 +489,32 @@ class TaobaoSpider:
         self.setup_db()
         self.start_browser()
 
-        # 访问淘宝首页
-        print("\n[Step 1] 访问淘宝首页...")
-        self.browser.navigate("https://www.taobao.com/", wait_sec=3)
-        if not self.wait_for_login():
-            print("[!] 淘宝要求登录，请先登录再运行")
-            return
+        # Step 1: 强制登录
+        print("\n[Step 1] 登录淘宝...", flush=True)
+        self.wait_for_login(300)
 
         total_products = 0
 
-        # 搜索采集
+        # Step 2: 搜索采集
         for keyword in KEYWORDS:
             for page in range(1, PAGES_PER_KEYWORD + 1):
-                print(f"\n{'='*50}")
-                print(f"[Step 2] 搜索: '{keyword}' 第{page}/{PAGES_PER_KEYWORD}页")
-                print(f"{'='*50}")
+                print(f"\n{'='*50}", flush=True)
+                print(f"[Step 2] 搜索: '{keyword}' 第{page}/{PAGES_PER_KEYWORD}页", flush=True)
+                print(f"{'='*50}", flush=True)
 
                 products = self.scrape_search_page(keyword, page)
 
                 if not products:
                     self.log_search(keyword, page, 0)
+                    # 如果第一个关键词第一页就没结果，可能登录有问题
+                    if keyword == KEYWORDS[0] and page == 1:
+                        print("  [警告] 第一个关键词无结果，可能登录失败", flush=True)
+                        print("  [警告] 保存页面HTML用于调试...", flush=True)
+                        debug_path = os.path.join(BASE_DIR, "data", "taobao_search_debug.html")
+                        html = self.browser.get_html() or ""
+                        with open(debug_path, "w", encoding="utf-8") as f:
+                            f.write(html)
+                        print(f"  [调试] 已保存: {debug_path}", flush=True)
                     continue
 
                 self.log_search(keyword, page, len(products))
@@ -495,21 +523,21 @@ class TaobaoSpider:
                     self.save_product(p, keyword)
                     total_products += 1
 
-                print(f"  [保存] 累计商品: {total_products}")
+                print(f"  [保存] 累计商品: {total_products}", flush=True)
 
             time.sleep(2)
 
         # 汇总
-        print(f"\n{'='*50}")
-        print(f"  淘宝采集完成！")
-        print(f"  总商品数: {total_products}")
-        print(f"  数据库: {DB_PATH}")
-        print(f"{'='*50}")
+        print(f"\n{'='*50}", flush=True)
+        print(f"  淘宝采集完成！", flush=True)
+        print(f"  总商品数: {total_products}", flush=True)
+        print(f"  数据库: {DB_PATH}", flush=True)
+        print(f"{'='*50}", flush=True)
 
         self.browser.close()
         self.db.close()
 
 
 if __name__ == "__main__":
-    spider = TaobaoSpider()
+    spider = TaobaoSpiderV3()
     spider.run()

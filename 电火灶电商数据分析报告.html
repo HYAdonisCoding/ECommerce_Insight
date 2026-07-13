@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>电火灶电商数据分析报告</title>
+    <title>电火灶电商数据分析报告（京东+淘宝）</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #0f0f1e; color: #e0e0e0; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.6; }
@@ -11,10 +11,11 @@
         h1 { text-align: center; color: #e94560; font-size: 28px; margin: 30px 0 10px; }
         .subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
         h2 { color: #0984e3; font-size: 22px; margin: 30px 0 15px; border-left: 4px solid #e94560; padding-left: 12px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        h3 { color: #fdcb6e; font-size: 18px; margin: 20px 0 10px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
         .stat-card { background: #16213e; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #0f3460; }
-        .stat-card .value { font-size: 32px; font-weight: bold; color: #e94560; }
-        .stat-card .label { color: #888; font-size: 14px; margin-top: 5px; }
+        .stat-card .value { font-size: 28px; font-weight: bold; color: #e94560; }
+        .stat-card .label { color: #888; font-size: 13px; margin-top: 5px; }
         .chart-container { background: #1a1a2e; border-radius: 12px; padding: 15px; margin: 20px 0; text-align: center; }
         .chart-container img { max-width: 100%; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; background: #16213e; border-radius: 8px; overflow: hidden; }
@@ -23,40 +24,73 @@
         tr:hover { background: #1a1a3e; }
         a { color: #0984e3; text-decoration: none; }
         a:hover { text-decoration: underline; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge.jd { background: rgba(233,69,96,0.2); color: #e94560; border: 1px solid #e94560; }
+        .badge.tb { background: rgba(255,102,0,0.2); color: #ff6600; border: 1px solid #ff6600; }
+        .badge.positive { background: rgba(0,184,148,0.2); color: #00b894; }
+        .badge.negative { background: rgba(233,69,96,0.2); color: #e94560; }
+        .badge.neutral { background: rgba(253,203,110,0.2); color: #fdcb6e; }
         .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
         .pros-cons > div { background: #16213e; border-radius: 12px; padding: 20px; }
         .pro { color: #00b894; margin: 8px 0; padding-left: 20px; position: relative; list-style: none; }
-        .pro::before { content: '✅'; position: absolute; left: 0; }
+        .pro::before { content: '\2705'; position: absolute; left: 0; }
         .con { color: #e94560; margin: 8px 0; padding-left: 20px; position: relative; list-style: none; }
-        .con::before { content: '❌'; position: absolute; left: 0; }
-        .feedback-item { background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 3px solid #555; }
-        .feedback-item.positive { border-left-color: #00b894; }
-        .feedback-item.negative { border-left-color: #e94560; }
-        .feedback-item.neutral { border-left-color: #fdcb6e; }
-        .feedback-source { display: inline-block; background: #0f3460; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 10px; }
-        .feedback-sentiment { font-size: 12px; color: #888; }
-        .feedback-item p { margin-top: 8px; color: #ccc; }
+        .con::before { content: '\274C'; position: absolute; left: 0; }
         .comparison-item { background: #16213e; border-radius: 8px; padding: 15px; margin: 10px 0; }
         .comparison-item strong { color: #fdcb6e; }
         .comparison-item p { margin-top: 8px; color: #ccc; }
+        .platform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .platform-card { background: #16213e; border-radius: 12px; padding: 20px; border: 1px solid #0f3460; }
+        .platform-card h3 { margin-top: 0; }
+        .platform-card.jd { border-top: 3px solid #e94560; }
+        .platform-card.tb { border-top: 3px solid #ff6600; }
         .footer { text-align: center; color: #555; margin: 40px 0 20px; font-size: 13px; }
+        .review-table td:nth-child(4) { max-width: 400px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>电火灶电商数据分析报告</h1>
-    <p class="subtitle">数据来源：京东商城 | 生成时间：2026-07-10 16:54 | 采集商品：160个</p>
+    <p class="subtitle">数据来源：京东商城 + 淘宝商城 | 生成时间：2026-07-13 10:08 | 采集商品：352个 | 评价：100条</p>
 
     <h2>📊 数据概览</h2>
     <div class="stats-grid">
-        <div class="stat-card"><div class="value">160</div><div class="label">总商品数</div></div>
-        <div class="stat-card"><div class="value">160</div><div class="label">有价格数据</div></div>
-        <div class="stat-card"><div class="value">109</div><div class="label">有店铺信息</div></div>
-        <div class="stat-card"><div class="value">31</div><div class="label">有评价数据</div></div>
-        <div class="stat-card"><div class="value">8505</div><div class="label">总评价数</div></div>
-        <div class="stat-card"><div class="value">¥2767</div><div class="label">平均价格</div></div>
-        <div class="stat-card"><div class="value">¥580.0</div><div class="label">最低价格</div></div>
-        <div class="stat-card"><div class="value">¥5577.0</div><div class="label">最高价格</div></div>
+        <div class="stat-card"><div class="value">352</div><div class="label">总商品数</div></div>
+        <div class="stat-card"><div class="value">160</div><div class="label">京东商品</div></div>
+        <div class="stat-card"><div class="value">192</div><div class="label">淘宝商品</div></div>
+        <div class="stat-card"><div class="value">278</div><div class="label">有品牌信息</div></div>
+        <div class="stat-card"><div class="value">40</div><div class="label">品牌总数</div></div>
+        <div class="stat-card"><div class="value">230</div><div class="label">有评价数据</div></div>
+        <div class="stat-card"><div class="value">15449164</div><div class="label">总评价数</div></div>
+        <div class="stat-card"><div class="value">100</div><div class="label">评价文本</div></div>
+        <div class="stat-card"><div class="value">¥1922</div><div class="label">平均价格</div></div>
+        <div class="stat-card"><div class="value">¥25.3</div><div class="label">最低价格</div></div>
+        <div class="stat-card"><div class="value">¥9026.0</div><div class="label">最高价格</div></div>
+        <div class="stat-card"><div class="value">99.9%</div><div class="label">平均好评率</div></div>
+    </div>
+
+    <h2>🏪 平台对比分析</h2>
+    <div class="chart-container"><img src="report/platform_comparison.png" alt="平台对比"></div>
+
+    <div class="platform-grid">
+        <div class="platform-card jd">
+            <h3 style="color:#e94560;">京东</h3>
+            <p><strong>商品数：</strong>160</p>
+            <p><strong>品牌数：</strong>28</p>
+            <p><strong>价格区间：</strong>¥580 - ¥5577</p>
+            <p><strong>平均价格：</strong>¥2767</p>
+            <p><strong>总评价数：</strong>11362</p>
+            <p><strong>主要品牌：</strong>老板, 西屋, 富得莱, 内芙, 欢度, 国爱, 尚朋堂, 华火</p>
+        </div>
+        <div class="platform-card tb">
+            <h3 style="color:#ff6600;">淘宝</h3>
+            <p><strong>商品数：</strong>192</p>
+            <p><strong>品牌数：</strong>24</p>
+            <p><strong>价格区间：</strong>¥25 - ¥9026</p>
+            <p><strong>平均价格：</strong>¥1214</p>
+            <p><strong>总评价数：</strong>15437802</p>
+            <p><strong>主要品牌：</strong>元利, 威力, 国爱, 永欣, 华火, 卡曼森, 炜坤, 半球</p>
+        </div>
     </div>
 
     <h2>📈 价格区间分布</h2>
@@ -66,88 +100,147 @@
     <div class="chart-container"><img src="report/brand_distribution.png" alt="品牌分布"></div>
 
     <table>
-        <tr><th>品牌</th><th>商品数</th><th>均价</th><th>总评价数</th><th>定位</th><th>价格区间</th><th>售后</th></tr>
+        <tr><th>品牌</th><th>商品数</th><th>均价</th><th>总评价数</th><th>平台分布</th></tr>
         
         <tr>
             <td><strong>华火</strong></td>
-            <td>99</td>
-            <td>¥3172</td>
-            <td>1080</td>
-            <td>电火灶发明者/标准制定者</td>
-            <td>¥2000-5500</td>
-            <td>365天只换不修</td>
+            <td>148</td>
+            <td>¥3073</td>
+            <td>428035</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>其他/无品牌</strong></td>
+            <td>74</td>
+            <td>¥528</td>
+            <td>6528453</td>
+            <td>taobao</td>
+        </tr>
+        <tr>
+            <td><strong>好太太</strong></td>
+            <td>12</td>
+            <td>¥373</td>
+            <td>9297</td>
+            <td>taobao</td>
         </tr>
         <tr>
             <td><strong>星焰</strong></td>
-            <td>8</td>
-            <td>¥2187</td>
-            <td>7000</td>
-            <td>京东评价量最高的品牌</td>
-            <td>¥1999-2954</td>
-            <td>标准质保</td>
-        </tr>
-        <tr>
-            <td><strong>卡曼森</strong></td>
-            <td>8</td>
-            <td>¥3149</td>
-            <td>400</td>
-            <td>中端性价比品牌</td>
-            <td>¥1599-2999</td>
-            <td>标准质保</td>
-        </tr>
-        <tr>
-            <td><strong>志高</strong></td>
-            <td>4</td>
-            <td>¥2164</td>
-            <td>0</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
+            <td>10</td>
+            <td>¥2040</td>
+            <td>140745</td>
+            <td>taobao, jd</td>
         </tr>
         <tr>
             <td><strong>美的</strong></td>
-            <td>4</td>
-            <td>¥1614</td>
-            <td>0</td>
-            <td>传统家电巨头入局</td>
-            <td>¥1000-3000</td>
-            <td>美的全国联保</td>
+            <td>10</td>
+            <td>¥1256</td>
+            <td>16195</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>半球</strong></td>
+            <td>9</td>
+            <td>¥313</td>
+            <td>16100</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>卡曼森</strong></td>
+            <td>9</td>
+            <td>¥3132</td>
+            <td>506</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>燚龙</strong></td>
+            <td>8</td>
+            <td>¥1234</td>
+            <td>1631158</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>荣事达</strong></td>
+            <td>7</td>
+            <td>¥603</td>
+            <td>9646</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>星煜</strong></td>
+            <td>6</td>
+            <td>¥2492</td>
+            <td>35205</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>先科</strong></td>
+            <td>6</td>
+            <td>¥1284</td>
+            <td>9000</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>志高</strong></td>
+            <td>5</td>
+            <td>¥1871</td>
+            <td>100</td>
+            <td>taobao, jd</td>
         </tr>
         <tr>
             <td><strong>国爱</strong></td>
+            <td>4</td>
+            <td>¥2370</td>
+            <td>440025</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>万和</strong></td>
+            <td>4</td>
+            <td>¥632</td>
+            <td>85100</td>
+            <td>taobao, jd</td>
+        </tr>
+        <tr>
+            <td><strong>华生</strong></td>
             <td>3</td>
-            <td>¥3014</td>
-            <td>25</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
+            <td>¥218</td>
+            <td>4632400</td>
+            <td>taobao</td>
+        </tr>
+        <tr>
+            <td><strong>威力</strong></td>
+            <td>3</td>
+            <td>¥275</td>
+            <td>916</td>
+            <td>taobao</td>
+        </tr>
+        <tr>
+            <td><strong>TINME</strong></td>
+            <td>3</td>
+            <td>¥2599</td>
+            <td>0</td>
+            <td>jd</td>
+        </tr>
+        <tr>
+            <td><strong>奥田美太</strong></td>
+            <td>3</td>
+            <td>¥980</td>
+            <td>0</td>
+            <td>jd</td>
         </tr>
         <tr>
             <td><strong>富得莱</strong></td>
             <td>3</td>
             <td>¥1149</td>
             <td>0</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
+            <td>jd</td>
         </tr>
         <tr>
-            <td><strong>老板</strong></td>
-            <td>1</td>
-            <td>¥1570</td>
+            <td><strong>德玛仕</strong></td>
+            <td>2</td>
+            <td>¥2049</td>
             <td>0</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-        </tr>
-        <tr>
-            <td><strong>方太</strong></td>
-            <td>1</td>
-            <td>¥3945</td>
-            <td>0</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
+            <td>jd</td>
         </tr>
     </table>
 
@@ -155,187 +248,282 @@
     <div class="chart-container"><img src="report/review_top10.png" alt="评价TOP10"></div>
 
     <table>
-        <tr><th>#</th><th>商品标题</th><th>价格</th><th>店铺</th><th>评价数</th><th>好评率</th><th>链接</th></tr>
+        <tr><th>#</th><th>平台</th><th>商品标题</th><th>价格</th><th>品牌</th><th>店铺</th><th>评价数</th><th>好评率</th><th>链接</th></tr>
         
         <tr>
             <td>1</td>
-            <td>星焰电火电焰灶不用燃煤气料节能猛火灶打火灶炉具3000W大功率等离子以纯电生明真...</td>
-            <td>¥2055.0</td>
-            <td>星焰旗舰店</td>
-            <td>2000</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10209813511715.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>2026纯电明火灶新款新型电火灶家用公寓商用农村工厂电燃灶电焰灶</td>
+            <td>¥300.0</td>
+            <td></td>
+            <td>阳火旗舰店旺旺在线</td>
+            <td>3000100</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWRB7X3xykagVvZ7FbkH16MmEzuQwGr7UUgwe6qD6A4KYj&spm=a21n57.1.item.9" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>2</td>
-            <td>星焰电火电焰灶不用燃煤气料节能猛火灶打火灶炉具3000W大功率等离子以纯电生明真...</td>
-            <td>¥1999.0</td>
-            <td>星焰旗舰店</td>
-            <td>2000</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10204701688923.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>华生好太太凹面钛晶电陶炉家用大功率猛火爆炒菜锅灶3500W电磁炉</td>
+            <td>¥231.0</td>
+            <td>华生</td>
+            <td>华生好太太旗舰店旺旺在线</td>
+            <td>2312000</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWQ434EWsJyY26HHZffDzo7xPeaMRpjo9d2u1VjGrmcetx&spm=a21n57.1.item.43" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>3</td>
-            <td>星焰【不用燃煤气只用电】电火灶纯电明火灶新能源台式灶具等离子猛火炉大功率公寓户外...</td>
-            <td>¥2954.0</td>
-            <td>星煜电焰旗舰店</td>
-            <td>1000</td>
-            <td>0.0%</td>
-            <td><a href="https://item.jd.com/10133878654696.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>华生 好太太家用新款凹面电陶炉炒菜锅猛火3500W大功率电磁炉电灶</td>
+            <td>¥210.0</td>
+            <td>华生</td>
+            <td>华生好太太旗舰店旺旺在线</td>
+            <td>2106000</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWQ434EWsJyY26HHZffDzo7xPeaMRpjo9d2u1VjGrmcetx&spm=a21n57.1.item.7" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>4</td>
-            <td>星焰电火电焰灶猛火炉电生明火不用燃煤气灶电磁炉纯电生火灶天然气灶3000W单灶省...</td>
-            <td>¥2008.0</td>
-            <td>星焰旗舰店</td>
-            <td>1000</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10211605530314.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>燚龙电焰灶电火灶插电生明火纯电燃灶台式单灶大火功率新能源双灶</td>
+            <td>¥159.0</td>
+            <td>燚龙</td>
+            <td>燚龍电焰灶工厂店旺旺在线</td>
+            <td>1599100</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWTybgFoUjcG4Lkp8h5oF3hoyW5A3RhxJfitY53DmvorSi&spm=a21n57.1.item.21" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>5</td>
-            <td>星焰灶插电生明火3000W纯电燃灶新能源台式单灶具 电火灶电生明火大功率公寓家用...</td>
-            <td>¥2799.0</td>
-            <td>星煜电焰旗舰店</td>
-            <td>500</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10175585578586.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>奥米康电陶炉双灶嵌入式电磁炉家用大功率爆炒双头静音台式光波炉</td>
+            <td>¥138.0</td>
+            <td></td>
+            <td>7年老店奥米康旗舰店旺旺在线</td>
+            <td>1388300</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWUXGZaBav4YF2XujQWDiKeLfaoqYSHXmnYzmPyaEnPA78&spm=a21n57.1.item.40" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>6</td>
-            <td>星焰电火灶电焰灶不用燃气电磁炉智能家用猛火炒菜新能源3000W大功率猛火灶节能家...</td>
-            <td>¥2709.0</td>
-            <td>星焰旗舰店</td>
-            <td>500</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10207641799489.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>炜坤火锅店电磁炉圆形商用灶3000W嵌入式线控2000W饭店专用酒店</td>
+            <td>¥78.2</td>
+            <td>炜坤</td>
+            <td>炜坤旗舰店旺旺在线</td>
+            <td>782000</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWUmkWSTcXKYJ8rUAL94EGbYmTkPMG7KKFbDjapcYYeiGa&spm=a21n57.1.item.50" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>7</td>
-            <td>华火2026新款纯电生明火电火灶3000W大功率电燃灶无需燃气/煤气家用多功能电...</td>
-            <td>¥2496.0</td>
-            <td></td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10215830517622.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>千图大功率电磁灶油烟净化一体电炒灶猛火炉双灶15kw酒店食堂专用</td>
+            <td>¥680.0</td>
+            <td>千图</td>
+            <td>5年老店千图电器旗舰店旺旺在线</td>
+            <td>680821</td>
+            <td>0%</td>
+            <td><a href="https://click.simba.taobao.com/cc_im?p=%B5%E7%BB%F0%D4%EE%CB%AB%D4%EE&s=1621417085&k=2561&e=F%2BrvNYYbQsBAN4kaMtGcUJxMSCAhM%2BF3npoxiJwF1%2BUdUnzRhay4BfvuTNjInr2F6QDMpI7rtsiIJ%2FbjiWuCeeRaW3FnpplhH2r5LgDh0TC6vt0pkXk06rTU%2B0EpEqkDegCFfk4zMTmlrYYk7LnMs2RZIeiQIi1dGULSiF%2Bfs0ISonwL%2BmRqrnokOS3ex8ecrMpJpfXzwPejkT5wCmzABsvrvqwonPcFFwu0628kILUz4pnmG2QN7wwOKRW7RvRLhFYxdqmHG6uheXzrSaZuHfNkIVkWYcxRAAiAuTREUohclT95HxWhkj4a1E%2BDSBnf3puyLtkViUWJgnSmzwHrqherovdwN5TEI0qHCqlLUi1uwkaJejJOBPNsJuY5PLhNW58tpOsyIGogaHo3HaNMF5pwjw63PaMRweEWOtv9DzBc4gQjyZMrAXRlaL33xJW%2FqnKYdRH02IxGuBfjjqDT0zdb0HlD0xdIrRS%2FjOqZhYbFk8eUjJGm0mrDMcpOvonRA5Z9w09nwAbyngUdwxD6zvk7kLz%2F3FZhtTF7BOz66j%2BU7TEeNxAC5doG4DBYwT0fiMXnadiLw0Vj7JP%2FgLl5aFxFqD17wEf7UFPwmPvwA2zEtB6Y7Oyh%2F6zQivnloN4P6A0w7U9Lro8VAI3Ou83TiZf0VaV%2B0A0xY%2FRgZVzK9ItoeGhsJ6AL2IBJmDYs2DnF1sswVjNkevgDZH0q%2BKR3G6MH2OaUprW8NeMQJPfWC%2B%2BmiBH5BonYicltfGJcYt4zATzkBUzDBtVep8NZrGQctZEsWQvUn%2FS04l1G22evrxFbWD1DP0vHXM683N66bk%2B5%2FSfPv7xb8d%2BCKMuVwJPhuS%2FciIN876sUKU%2BAPiZotmUPwv29aKPXG9LkVEppCetMy92OxObAuFWJSY4LQdwPk5O%2FL4KM9UHRxaek3UfhdS5qQ8rTdC7v3Q%2B9N7aL5Ik2DwNImPaJ6fQ07nkyV1%2B6nCMo3OB5onWPQNiorDt2xQ0H3DVZzQNVwt3UFxrCRR0YnbGjgbbCH%2BrGHDEVqVMVoRJmM4MgOjIuZPdsjuln4iFQQBstLixz05K0kj7KxHjwy%2BPfUm5RvS1T8acA2eVakZyj7BGs12QXL5C0vy7fWbDl7PqfbqaBHScV9C67hurVGnx0bR02VvXvcyL2aVf1iU2uwsL51u7fkZChjIiW27Zf0P54bEL%2FSTFQC8QjTy9M8oeVYMuMEo0i6OgR5i3AUioLJ7VYJBv33ktGyJ9t0WVhppZ1uidrLsc34gnpHRzv%2FP2C6xpLWLbRtrZZbacI%2FvqikincMPEoP%2BC3kvZNkl85a1FvDmBhIU0iLerDDv2cd0vXiCf5oZDcgG6%2BOL%2BDx%2BWWCrfQliedSIQsUtEmUd64KkHtcSBskrgPJqvo7cH5bDC1mUmLdd1P4iEdCXqvPFN4H6ZEsMz4gqC2nCFi5FNsMPtk8Zyo1Tfp9Ih4TGrL5r8tCRFs835BHgV1cdmffgJpQHgTqNT0U0AvjN8LHkwvgSk3ru92Y3E7cViXRMZQZ4sQmTRDo0xOHtb5HdI00joQ5dpaz6qfM69uis7poPnQu241BOev%2BP9SBVnyTYRq6ImHMyS%2BYHzBFA93zReSE8eD%2BKEGNaAu8sTvgTXIHZ9Sr3I35WUzCgJXKnYmw2BaVzCaW4Po38lcfeI%2FmFE0lWZOFRj9ioMcb70xgF8d%2FOgseXpfkzegwWVBMlpsOGl%2BEXjiwNTRTgvtEH31qqSO7yx5el%2BTN6DBp438Lh7hOEltmxPFzMb7XrC%2B0ZCqDd%2BAVoxlXG2pJqOzetdNoQJocDq3CiZKLlqfZLZmJ6X0QGK7%2FIGVZW4wyy2%2FusNo7lvkiWJupHe%2FcdKYQiLEaffbNwb0Sih1ZbWoxpMsuz6nmIquC9D52AY6XivDZxIYGBmFeGRYfjEklvxRa0DSjLj%2BP1YLBLSJv%2BSthpcM0HkgavAaYT3GEgQHFLPO9eY86ZmqCjg%2Fdf9dFKJ70Sn3V%2FTwsdzdYGZ%2FzmVVCIuCU7s7P3Crqj1KnUaf%2BrfVpT2ip3yqKy8aynmqXb0BpOGhx10qO07a%2FHywyNs1sygg0bb5m%2F%2B29CIhoRejxLUYdPuh7Lf4ERD37n4giCw5pJtUG5FDcSofLQQ%2BYJHg4cF9I4Pp%2BXeIGiZQE%2Bq%2BDhdt302zSycbeG9XhTOM3ijOs9y9fzU%2Bt6XvnoIuRKAG36%2FZFR%2BlAXYMHrD4sjI8gkjmays0bcn6N3UfesbKeeX8a0M4Lcpl5yUEDgNbaz2ne3xQimlCUfQMD58NnPa9yRXvZPwwT5YnhkXJKD%2FgLUmUjPSXqBkroBlb43EU6WIetWREvMSHlhJH%2FLs6Utqhyjr1qwtrWOGqPMzv%2ByVXh4mt108eN3CN5ZInH%2Bwm6cZOyKVCoVPNcHByQENO9ZOw05JyS%2BWVhs7e7AJmfzBnJc3GHDEVqVMVoUHl1jwMP2qQlGYMnoFYab%2FdkwtZH1ZkiFNAL4zfCx5Mm1dQJHu4un3nB%2FcuDQ%2BCMuupsQQVZhQWOvGw%2BMUOptVU7wIlIaKBhX8s9xA%2B811u&mm_sceneid=2_0_1594990122_0&spm=a21n57.1.item.28" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>8</td>
-            <td>华火电火灶电生明火双灶家用6000W大功率纯电生明火无需任何燃料插电即用U10p...</td>
-            <td>¥2480.0</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>低压电子猛火灶铸铁商用摆摊液化气天然气单灶铁板烧手抓饼烤冷面</td>
+            <td>¥60.1</td>
             <td></td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10218820725581.html" target="_blank">查看</a></td>
+            <td>汇鑫炉具旺旺在线</td>
+            <td>601000</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWVFnuoAL2s2fGmBDnRE6dJBmVBiqwPWQGk9w1HsiQ7qxe&spm=a21n57.1.item.29" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>9</td>
-            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
-            <td>¥1599.0</td>
-            <td>卡曼森电器旗舰店</td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10220526483036.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>商用电磁炉油烟净化一体灶15kw大功率电炒灶饭店酒店爆炒猛火电炉</td>
+            <td>¥480.0</td>
+            <td></td>
+            <td>DECISHE厨电旗舰店旺旺在线</td>
+            <td>480029</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWQitRbHAVCEjKsW6ZkvaKht2TCauFAYdVKPJKharvMQaA&spm=a21n57.1.item.10" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>10</td>
-            <td>华火2026新款纯电生明火电火灶3000W大功率电燃灶无需燃气/煤气家用多功能电...</td>
-            <td>¥2394.0</td>
-            <td></td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10215830517621.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>国爱电火灶家用插电式明火猛火电燃灶大功率电陶炉一体双灶3500W</td>
+            <td>¥439.0</td>
+            <td>国爱</td>
+            <td>国爱电火灶品牌店旺旺在线</td>
+            <td>439931</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWWd5wmCrHEnZYEbcopSWvmFvRZkvsoe6Gp2icxEP1X9D1&spm=a21n57.1.item.5" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>11</td>
-            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
-            <td>¥2999.0</td>
-            <td>卡曼森电器旗舰店</td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10220526483037.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>华火大功率商用电火灶10000W电生明火酒店餐馆厨房用灶单灶电燃灶</td>
+            <td>¥388.0</td>
+            <td>华火</td>
+            <td>华火电火灶工厂店旺旺在线</td>
+            <td>388001</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWa9T3vuhtN4kNSR5YdmE4edytt1DpNqHMHw8yQjGcTmQK&spm=a21n57.1.item.26" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>12</td>
-            <td>华火电火灶电燃灶电焰灶电陶炉组合灶家用炖煮爆炒大火力温度高3500W 玄武黑(全...</td>
-            <td>¥3980.0</td>
-            <td>华火旗舰店</td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10211600133228.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>多头商用电磁炉电陶炉不挑锅3500W大功率麻辣烫锡纸煲仔饭炉灶</td>
+            <td>¥351.0</td>
+            <td></td>
+            <td>5年老店华灶商用电磁炉旺旺在线</td>
+            <td>351600</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWR3Z7VYgwH8y7G9xRMWYx7563PDvHoZy6ZJJZqNiw3ndK&spm=a21n57.1.item.17" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>13</td>
-            <td>华火电火灶电生明火双灶家用6000W大功率纯电生明火无需任何燃料插电即用U10p...</td>
-            <td>¥5180.0</td>
-            <td></td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10218820725578.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>华生好太太家用新款凹面电陶炉爆炒菜锅一体全套猛火3500W大功率</td>
+            <td>¥214.0</td>
+            <td>华生</td>
+            <td>华生好太太旗舰店旺旺在线</td>
+            <td>214400</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWQ434EWsJyY26HHZffDzo7xPeaMRpjo9d2u1VjGrmcetx&spm=a21n57.1.item.49" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>14</td>
-            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
-            <td>¥3999.0</td>
-            <td>卡曼森电器旗舰店</td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10221693096724.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>不挑锅具平凹两用大功率5000火力值多功能电陶炉电火灶节能防爆</td>
+            <td>¥198.0</td>
+            <td></td>
+            <td>琪美生活电器旺旺在线</td>
+            <td>198500</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWaXTLxNkvh8GpMxjS77XdFv9dHa2XZDLCGebUdzDJwQmJ&spm=a21n57.1.item.35" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>15</td>
-            <td>卡曼森【不用燃煤气只用电】电火灶纯电明火灶新能源台嵌两用等离子猛火炉大功率公寓户...</td>
-            <td>¥3999.0</td>
-            <td>卡曼森电器旗舰店</td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10221682914392.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>家和电炉子节能电热炉丝 可调温电炉3000瓦家用电炉灶炒菜炉包邮</td>
+            <td>¥138.0</td>
+            <td></td>
+            <td>金丰电气商行旺旺在线</td>
+            <td>138100</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWP6qc31mcvoowLzzYhLiXYhf9xiKpxfo7VtRUTk8E83Y5&spm=a21n57.1.item.38" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>16</td>
-            <td>华火电火灶电生明火双灶家用6000W大功率纯电生明火无需任何燃料插电即用U10p...</td>
-            <td>¥4980.0</td>
-            <td></td>
-            <td>100</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10218820725579.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>2026新款星焰家用新型电火灶明火不用燃气新能源电焰炉科技电然灶</td>
+            <td>¥1989.67</td>
+            <td>星焰</td>
+            <td>星煜电焰旗舰店旺旺在线</td>
+            <td>67600</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWVc9x53rhW7gaXghHA6KogWXa7tP9RqjJxTWi6wXdXLHC&spm=a21n57.1.item.4" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>17</td>
-            <td>华火电火灶电生明火2500W防水电焰灶台式电燃加热大火大功率公寓 星空黑</td>
-            <td>¥2880.0</td>
-            <td>华火厨电旗舰店</td>
-            <td>66</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10140886729208.html" target="_blank">查看</a></td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>2026星焰新型电火灶不用燃气科技电燃灶插电生明火家用新能源灶炉</td>
+            <td>¥2059.67</td>
+            <td>星焰</td>
+            <td>星焰旗舰店旺旺在线</td>
+            <td>67500</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWPLF1PnqTNQdrDSoWZSsfWYDdfA6tYmgVKgPYbQW2S6it&spm=a21n57.1.item.2" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>18</td>
-            <td>华火新能源26年新款u7升级款电火焰灶单灶插电即用出明火电燃灶厨房电焰灶 u7升...</td>
-            <td>¥2496.0</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>不锈钢气电两用燃气灶双灶嵌入式煤气灶电磁炉一体一气一电陶炉灶</td>
+            <td>¥559.0</td>
             <td></td>
-            <td>59</td>
-            <td>0.0%</td>
-            <td><a href="https://item.jd.com/10209453821199.html" target="_blank">查看</a></td>
+            <td>贵帝好太太电器旗舰店旺旺在线</td>
+            <td>55984</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWYdn135y6XRDoHuTWGR7xEtGpWee7SC7M4kD6PaBm1fUb&spm=a21n57.1.item.26" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>19</td>
-            <td>华火电火灶2026新款电火灶家用电燃灶电焰灶纯电生明火大火大功率台式灶 尊贵黑色...</td>
-            <td>¥2279.0</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>加厚实验电热炉丝灶电炉子小型家用商做饭炒菜取暖烤火煮茶盘老式</td>
+            <td>¥25.3</td>
             <td></td>
-            <td>56</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10224944526587.html" target="_blank">查看</a></td>
+            <td>回头客1万BOIRCEON齐思专卖店旺旺在线</td>
+            <td>52300</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWYjagybDCPyW8unLHBFa4ZnLmbzpdd3ZfY5V4rqChbd4J&spm=a21n57.1.item.49" target="_blank">查看</a></td>
         </tr>
         <tr>
             <td>20</td>
-            <td>华火电火灶2026新款电火灶家用电燃灶电焰灶纯电生明火大火大功率台式灶 尊贵黑色...</td>
-            <td>¥2379.0</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>新型电火灶插电生明火3500瓦大火力电焰灶家用电陶炉灶具台嵌式</td>
+            <td>¥489.0</td>
             <td></td>
-            <td>56</td>
-            <td>100.0%</td>
-            <td><a href="https://item.jd.com/10224944526585.html" target="_blank">查看</a></td>
+            <td>新能源电火灶官营店旺旺在线</td>
+            <td>48994</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWS5qHE2bAm23nRBtUvDH8GZYUsyBiL6JFoNDAPFhDWpU4&spm=a21n57.1.item.4" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>21</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>3500瓦电焰灶电火灶电生明火灶具厨具电磁炉电陶炉火力左右切换</td>
+            <td>¥457.0</td>
+            <td></td>
+            <td>阳火旗舰店旺旺在线</td>
+            <td>45770</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWRB7X3xykagVvZ7FbkH16MmEzuQwGr7UUgwe6qD6A4KYj&spm=a21n57.1.item.27" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>22</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>万和电陶炉2500W省电凹面钛晶炉家用具多功能光电灶一体全套</td>
+            <td>¥290.42</td>
+            <td>万和</td>
+            <td>万和亿凯威专卖店旺旺在线</td>
+            <td>42200</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWbAfxW2rzkdeVyApeQGBUqkjdAMgNEu96j5FWuanXMR6E&spm=a21n57.1.item.22" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>23</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>万和家用新款凹面电陶炉炒菜锅猛火2500W大功率电磁炉电灶正品</td>
+            <td>¥460.42</td>
+            <td>万和</td>
+            <td>万和万宇专卖店旺旺在线</td>
+            <td>42200</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWKFLqxB1Z5whKEuuFb25pKRKrDhpkyPQMKYAL4DnNA44X&spm=a21n57.1.item.35" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>24</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>黑狗（HEIGOO）电火灶电陶炉组合灶黑色双灶（左电火灶右电陶炉）</td>
+            <td>¥399.0</td>
+            <td></td>
+            <td>HEiGOO黑狗旗舰店旺旺在线</td>
+            <td>39991</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWVSdhsHjFwCUqkmrGBKWemX7BANRMrb69RGuPp5wsfA8z&spm=a21n57.1.item.48" target="_blank">查看</a></td>
+        </tr>
+        <tr>
+            <td>25</td>
+            <td><span class="badge tb">淘宝</span></td>
+            <td>甲醇专用灶具乙醇工业酒精可用一键启动自吸 220v 电电喷灶</td>
+            <td>¥288.0</td>
+            <td></td>
+            <td>新能源产业研发旺旺在线</td>
+            <td>28821</td>
+            <td>0%</td>
+            <td><a href="https://store.taobao.com/shop/view_shop.htm?appUid=RAzN8HWXSWVnBLY6GK2SDrwWX4Ub97sDEAueakA78EMLvYGffR1&spm=a21n57.1.item.25" target="_blank">查看</a></td>
         </tr>
     </table>
 
@@ -357,103 +545,232 @@
     <h2>🔄 竞品对比</h2>
     <div class="comparison-item"><strong>电火灶 vs 燃气灶</strong><p>电火灶在安全、环保、安装便捷性上完胜；燃气灶在价格和能耗成本上有优势</p></div><div class="comparison-item"><strong>电火灶 vs 电磁炉</strong><p>电火灶在加热速度、口感、锅具兼容性上完胜；电磁炉在价格上有绝对优势</p></div><div class="comparison-item"><strong>电火灶 vs 电陶炉</strong><p>电火灶在加热速度和口感上优于电陶炉；电陶炉预热时间长但温控精准</p></div>
 
-    <h2>📝 用户真实反馈</h2>
-    
-        <div class="feedback-item positive">
-            <span class="feedback-source">知乎评测</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>安全：电火灶>电磁炉=电陶炉>燃气灶；口感：电火灶=燃气灶>电陶炉>电磁炉</p>
-        </div>
-        <div class="feedback-item positive">
-            <span class="feedback-source">搜狐评测</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>华火电火灶采用"电生明火"技术，加热效率高，比电磁炉节能20%，热损失小</p>
-        </div>
-        <div class="feedback-item positive">
-            <span class="feedback-source">什么值得买</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>电火灶核心技术在于电弧等离子体产生火焰，最高温度1300℃，热效率78.4%-81.5%</p>
-        </div>
-        <div class="feedback-item neutral">
-            <span class="feedback-source">知乎评测</span>
-            <span class="feedback-sentiment">中性</span>
-            <p>不考虑价格选电火灶，考虑价格选电磁炉——这是目前最理性的购买建议</p>
-        </div>
-        <div class="feedback-item positive">
-            <span class="feedback-source">用户反馈</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>插电就能出明火，炒菜口感跟燃气灶一样好，比电磁炉强太多了</p>
-        </div>
-        <div class="feedback-item positive">
-            <span class="feedback-source">用户反馈</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>价格确实贵，但是不用接燃气管道，公寓里用特别方便</p>
-        </div>
-        <div class="feedback-item negative">
-            <span class="feedback-source">用户反馈</span>
-            <span class="feedback-sentiment">差评</span>
-            <p>3000W功率需要单独走线，老房子用不了，这是最大的限制</p>
-        </div>
-        <div class="feedback-item neutral">
-            <span class="feedback-source">用户反馈</span>
-            <span class="feedback-sentiment">中性</span>
-            <p>电费比燃气费贵一些，但安全性和便捷性弥补了这个缺点</p>
-        </div>
-        <div class="feedback-item positive">
-            <span class="feedback-source">京东评价</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>星焰电火灶2000+条评价，好评率接近100%，用户满意度极高</p>
-        </div>
-        <div class="feedback-item positive">
-            <span class="feedback-source">京东评价</span>
-            <span class="feedback-sentiment">好评</span>
-            <p>华火U7 Pro新款仅59条评价，但提供365天只换不修，售后有保障</p>
-        </div>
+    <h2>📝 用户评价文本（来自数据库）</h2>
+    <div class="chart-container"><img src="report/review_keywords.png" alt="评价关键词"></div>
+
+    <table class="review-table">
+        <tr><th>平台</th><th>评价</th><th>用户</th><th>内容</th><th>日期</th></tr>
+        
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>j***j</td>
+            <td>火力挺不错 1火力还可以 1收货快速 1</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(10)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>r***q</td>
+            <td>买家评价(500+)好评率高达100%大火力超猛 18操作超便捷 23一擦即净 1火焰很稳定 2炒菜很香 2尺寸完美适配 5适合老人用 2用着超舒适 6颜值超能打 14智能功能超实用 1火力家用够用 ...</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>r***q</td>
+            <td>大火力超猛 18操作超便捷 23一擦即净 1火焰很稳定 2炒菜很香 2尺寸完美适配 5适合老人用 2用着超舒适 6颜值超能打 14智能功能超实用 1火力家用够用 1超省电 2</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(500+)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>8啊明8</td>
+            <td>买家评价(18)好评率高达100%8啊明8大家如果嫌火力太猛 可以加一个导热盘，总体上算好全部评价问大家做的菜有明火做的好吃吗，不要又像电磁炉做点东西不好吃是的，插电生明火的呢查看更多1个回答全部问答</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>8啊明8</td>
+            <td>大家如果嫌火力太猛 可以加一个导热盘，总体上算好</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(18)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(0)我要评价</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(0)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>a***a</td>
+            <td>买家评价(100+)好评率高达100%大火力超猛 2使用超顺手 3烧水超快 1超省电 1安全防护超到位 5材质质量很好 11细节处理细腻 1无需点火 1外观超精致 4物流很快 18服务很棒 17解答超...</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>a***a</td>
+            <td>大火力超猛 2使用超顺手 3烧水超快 1超省电 1安全防护超到位 5材质质量很好 11细节处理细腻 1无需点火 1外观超精致 4物流很快 18服务很棒 17解答超耐心 2</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(100+)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>7***1</td>
+            <td>买家评价(30)好评率高达100%火力猛加热快 2火候很均匀 1即插即用 1超省电 2灶头超好用 1功率够用 1材质质量很好 1双灶超好用 1火焰控制正常 1省电耐用 2配送超快速 1态度超友好 17...</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>7***1</td>
+            <td>火力猛加热快 2火候很均匀 1即插即用 1超省电 2灶头超好用 1功率够用 1材质质量很好 1双灶超好用 1火焰控制正常 1省电耐用 2配送超快速 1态度超友好 1</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(30)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>j***j</td>
+            <td>买家评价(10)火力挺不错 1火力还可以 1收货快速 1j***j只要能点着火，火力还是可以的。我1月9日下单，11日收到货。12日开始用，第一天能轻松点火，第二天点火就不顺畅，第三天也能点着火，第四...</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>j***j</td>
+            <td>火力挺不错 1火力还可以 1收货快速 1</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(10)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(7)好评率高达100%问大家我要提问</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(7)好评率高达100%</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(7)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>r***q</td>
+            <td>买家评价(500+)好评率高达100%大火力超猛 18操作超便捷 23一擦即净 1火焰很稳定 2炒菜很香 2尺寸完美适配 5适合老人用 2用着超舒适 6颜值超能打 14智能功能超实用 1火力家用够用 ...</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>r***q</td>
+            <td>大火力超猛 18操作超便捷 23一擦即净 1火焰很稳定 2炒菜很香 2尺寸完美适配 5适合老人用 2用着超舒适 6颜值超能打 14智能功能超实用 1火力家用够用 1超省电 2</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(500+)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>j***y</td>
+            <td>买家评价(11)好评率高达100%大火力超猛 3做菜超方便 1火力可微调 1超省电 1用着很安心 2材质非常厚实 1无需点火 1质感高级 1充满科技感 1适用性强 1运送超快速 2送货上门方便 1j*...</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td>j***y</td>
+            <td>大火力超猛 3做菜超方便 1火力可微调 1超省电 1用着很安心 2材质非常厚实 1无需点火 1质感高级 1充满科技感 1适用性强 1运送超快速 2送货上门方便 1</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(11)</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(0)我要评价</td>
+            <td>None</td>
+        </tr>
+        <tr>
+            <td><span class="badge jd">京东</span></td>
+            <td><span class="badge neutral">未评分</span></td>
+            <td></td>
+            <td>买家评价(0)</td>
+            <td>None</td>
+        </tr>
+    </table>
 
     <h2>🔑 商品关键词分析</h2>
     <div class="chart-container"><img src="report/keyword_frequency.png" alt="关键词频率"></div>
 
-    <h2>📋 品牌深度分析</h2>
-    <div class="comparison-item">
-        <strong style="font-size:18px;">华火</strong>
-        <p><strong>定位：</strong>电火灶发明者/标准制定者</p>
-        <p><strong>市场份额：</strong>99/160商品（61.9%）</p>
-        <p><strong>特点：</strong>1600+经销商、100万年产能、国资战略投资</p>
-        <p><strong>价格区间：</strong>¥2000-5500</p>
-        <p><strong>主要型号：</strong>U7 Pro（新款）、U10 Pro（双灶）、Minni X1（便携）</p>
-        <p><strong>售后政策：</strong>365天只换不修</p>
-    </div>
-    <div class="comparison-item">
-        <strong style="font-size:18px;">星焰</strong>
-        <p><strong>定位：</strong>京东评价量最高的品牌</p>
-        <p><strong>市场份额：</strong>8/160商品（5%）</p>
-        <p><strong>特点：</strong>性价比高，2000+条评价，好评率100%</p>
-        <p><strong>价格区间：</strong>¥1999-2954</p>
-        <p><strong>主要型号：</strong>3000W单灶、双灶</p>
-        <p><strong>售后政策：</strong>标准质保</p>
-    </div>
-    <div class="comparison-item">
-        <strong style="font-size:18px;">卡曼森</strong>
-        <p><strong>定位：</strong>中端性价比品牌</p>
-        <p><strong>市场份额：</strong>8/160商品（5%）</p>
-        <p><strong>特点：</strong>台嵌两用，价格相对亲民</p>
-        <p><strong>价格区间：</strong>¥1599-2999</p>
-        <p><strong>主要型号：</strong>台嵌两用款、双灶组合</p>
-        <p><strong>售后政策：</strong>标准质保</p>
-    </div>
-    <div class="comparison-item">
-        <strong style="font-size:18px;">美的</strong>
-        <p><strong>定位：</strong>传统家电巨头入局</p>
-        <p><strong>市场份额：</strong>4/160商品（2.5%）</p>
-        <p><strong>特点：</strong>品牌背书，京东自营</p>
-        <p><strong>价格区间：</strong>¥1000-3000</p>
-        <p><strong>主要型号：</strong>美的电火灶系列</p>
-        <p><strong>售后政策：</strong>美的全国联保</p>
-    </div>
     <div class="footer">
         <p>数据采集方式：CDP浏览器自动化 + WebSearch聚合</p>
-        <p>数据库：SQLite (160条商品记录)</p>
-        <p>生成时间：2026-07-10 16:54</p>
+        <p>数据库：SQLite (352条商品 + 100条评价)</p>
+        <p>平台：京东(160) + 淘宝(192)</p>
+        <p>生成时间：2026-07-13 10:08</p>
     </div>
 </div>
 </body>
